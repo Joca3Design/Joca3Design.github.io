@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joca3Design | Portafolio Digital</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- VARIABLES & RESET --- */
+        :root {
+            --bg-color: #050505;
+            --card-bg: #121212;
+            --text-main: #ffffff;
+            --text-muted: #b3b3b3;
+            --accent: #0099ff;
+            --accent-glow: rgba(0, 153, 255, 0.4);
+            --glass: rgba(255, 255, 255, 0.05);
+            --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
+
+        a { text-decoration: none; color: inherit; transition: var(--transition); }
+        ul { list-style: none; }
+
+        /* --- UI COMPONENTS --- */
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 0%; height: 100%;
+            background: var(--accent);
+            z-index: -1;
+            transition: var(--transition);
+        }
+
+        .btn:hover::before { width: 100%; }
+        .btn:hover { color: #fff; box-shadow: 0 0 20px var(--accent-glow); }
+
+        .btn-fill {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-fill:hover {
+            background: transparent;
+            color: var(--accent);
+        }
+
+        .section-title {
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            text-align: center;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .section-title span { color: var(--accent); }
+
+        /* --- ANIMATIONS --- */
+        .hidden { opacity: 0; transform: translateY(50px); transition: 1s ease; }
+        .show { opacity: 1; transform: translateY(0); }
+
+        /* --- NAVBAR --- */
+        nav {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(5, 5, 5, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; }
+        .logo span { color: var(--accent); }
+
+        .nav-links { display: flex; gap: 30px; }
+        .nav-links a { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
+        .nav-links a:hover { color: var(--accent); }
+
+        /* --- HERO SECTION --- */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding: 120px 20px 50px;
+        }
+
+        /* Fondo abstracto animado */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -20%; left: -20%;
+            width: 50vw; height: 50vw;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            filter: blur(100px);
+            opacity: 0.5;
+            z-index: -1;
+            animation: pulse 10s infinite alternate;
+        }
+
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.2); } }
+
+        .hero h1 {
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            max-width: 900px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            max-width: 600px;
+        }
+
+        /* Video Wrapper */
+        .video-wrapper {
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px var(--accent-glow);
+            margin-bottom: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* --- ABOUT SECTION --- */
+        .about {
+            padding: 100px 50px;
+            display: flex;
+            align-items: center;
+            gap: 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .about-img {
+            flex: 1;
+            position: relative;
+        }
+
+        .about-img img {
+            width: 100%;
+            border-radius: 10px;
+            filter: grayscale(100%);
+            transition: var(--transition);
+            box-shadow: 20px 20px 0px var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .about-img:hover img { filter: grayscale(0%); box-shadow: 20px 20px 0px var(--accent); }
+
+        .about-text { flex: 1; }
+        .about-text h2 { font-size: 2.5rem; margin-bottom: 20px; }
+        .about-text p { color: var(--text-muted); margin-bottom: 30px; font-size: 1.1rem; }
+
+        /* --- CATEGORIES --- */
+        .services { padding: 100px 50px; background: #080808; }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .services-grid i{
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+            box-shadow: 0 10px 40px -10px var(--accent-glow);
+        }
+
+        .card-icon {
+            width: 60px; height: 60px;
+            background-image: url('https://placehold.net/placeholder.png');
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .card h3 { font-size: 1.5rem; margin-bottom: 15px; }
+        .card p { color: var(--text-muted); font-size: 0.95rem; }
+
+        /* --- CONTACT --- */
+        .contact {
+            padding: 100px 50px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 50px;
+        }
+
+        .contact-info { flex: 1; min-width: 300px; }
+        .contact-info h2 { font-size: 3rem; margin-bottom: 20px; }
+        .contact-info p { color: var(--text-muted); margin-bottom: 40px; }
+        
+        .social-links { display: flex; gap: 20px; margin-top: 30px; }
+        .social-btn {
+            width: 50px; height: 50px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .social-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+        .contact-form {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted); }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            background: #000;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .about { flex-direction: column; }
+            .nav-links { display: none; } /* Podrías agregar un menú hamburguesa aquí */
+            nav { padding: 20px; }
+            .contact { padding: 50px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div style="display: flex; gap: 10px;">
+            <img src="Logo_nav.png" alt="" height="35px">
+            <div class="logo">JOCA3<span>DESIGN</span></div>
+        </div>
+        <div class="nav-links">
+            <a href="#about">Sobre Mí</a>
+            <a href="#services">Servicios</a>
+            <a href="#contact">Contacto</a>
+        </div>
+        <a href="#contact" class="btn">Hablemos</a>
+    </nav>
+
+    <header class="hero">
+        <h1 class="hidden">Experiencias Digitales<br> <span style="color:var(--accent)">Inmersivas</span></h1>
+        <p class="hidden">Desarrollo de contenido multidimensional, Animación 3D y Arte Digital.</p>
+        
+        <div class="video-wrapper hidden">
+            <iframe src="https://player.vimeo.com/video/1155535232?autoplay=0&title=0&byline=0&portrait=0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <div class="hidden" style="margin-top: 30px;">
+            <a href="https://drive.google.com/uc?export=download&id=1cw7ZHBXbFcmR21-BkrwtBi9CuH9Rc76Z" download class="btn btn-fill"><i class="fas fa-download"></i> Descargar Portafolio</a>
+        </div>
+    </header>
+
+    <section id="about" class="about hidden">
+        <div class="about-img">
+            <img src="FotoMe1.png" alt="José Carlos Sánchez Reyes">
+        </div>
+        <div class="about-text">
+            <h2>José Carlos <br><span>Sánchez Reyes</span></h2>
+            <p>
+                Soy egresado de la Universidad Tecnológica de México (UNITEC), y me apasiona crear y mejorar mi trabajo constantemente. Mi enfoque principal se encuentra en el desarrollo de contenido multidimensional, y busco desafiar mis habilidades y conocimientos en esta industria en constante evolución.
+            </p>
+            <p>
+                Mi objetivo es contribuir al campo del entretenimiento digital mediante la creación de experiencias inmersivas y emocionantes.
+            </p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <span style="padding: 5px 15px; border: 1px solid var(--accent); border-radius: 20px; font-size: 0.8rem; color: var(--accent);">Creatividad</span>
+                <span style="padding: 5px 15px; border: 1px solid #333; border-radius: 20px; font-size: 0.8rem;">Innovación</span>
+                <span style="padding: 5px 15px; border: 1px solid #333; border-radius: 20px; font-size: 0.8rem;">Multidimensional</span>
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="services hidden">
+        <h2 class="section-title">Mis <span>Áreas</span></h2>
+        
+        <div class="services-grid">
+            <div class="card">
+                <i class="fa fa-cube" aria-hidden="true"></i> <h3>Animación y Modelado 3D</h3>
+                <p>Creación de mundos tridimensionales, personajes y motion graphics de alto impacto visual para diversas plataformas.</p>
+            </div>
+
+            <div class="card">
+                <i class="fa fa-pencil" aria-hidden="true"></i>
+                <h3>Diseño Gráfico</h3>
+                <p>Estrategias visuales para redes sociales y medios impresos que comunican la identidad de marca con fuerza y claridad.</p>
+            </div>
+
+            <div class="card">
+                <i class="fa fa-code" aria-hidden="true"></i>
+                <h3>UI/UX & Front-End</h3>
+                <p>Diseño de interfaces intuitivas y programación web enfocada en la experiencia del usuario y la estética moderna.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="contact hidden">
+        <div class="contact-info">
+            <h2>Creemos algo <br><span>Increíble</span></h2>
+            <p>Estoy disponible para proyectos freelance y colaboraciones. Si tienes una idea, ¡hagámosla realidad!</p>
+            
+            <ul style="margin-top: 30px; font-size: 1.1rem;">
+                <li style="margin-bottom: 15px;"><i class="fas fa-envelope" style="color:var(--accent); margin-right: 10px;"></i> joca3design@gmail.com</li>
+                <li><i class="fab fa-whatsapp" style="color:var(--accent); margin-right: 10px;"></i> +52 729 139 8021</li>
+            </ul>
+
+            <div class="social-links">
+                <a href="https://linkedin.com" target="_blank" class="social-btn"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://instagram.com" target="_blank" class="social-btn"><i class="fab fa-instagram"></i></a>
+                <a href="https://wa.me/527291398021" target="_blank" class="social-btn"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+
+        <div class="contact-form">
+            <form action="https://formsubmit.co/joca3design@gmail.com" method="POST">
+                <input type="hidden" name="_subject" value="Nuevo contacto de Portafolio!">
+                <input type="hidden" name="_captcha" value="false">
+                <input type="hidden" name="_next" value="http://tupagina.com/gracias.html"> <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="tel" name="phone">
+                </div>
+                <div class="form-group">
+                    <label>Mensaje</label>
+                    <textarea name="message" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-fill" style="width: 100%; border:none;">Enviar Mensaje</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 José Carlos Sánchez Reyes. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        // Intersection Observer para animaciones al hacer scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show');
+                }
+            });
+        });
+
+        const hiddenElements = document.querySelectorAll('.hidden');
+        hiddenElements.forEach((el) => observer.observe(el));
+    </script>
+</body>
+</html>
