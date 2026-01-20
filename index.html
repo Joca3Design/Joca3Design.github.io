@@ -369,7 +369,39 @@
             border-radius: 10px;
             position: relative;
             border: 1px solid rgba(255,255,255,0.05);
-            cursor: pointer;
+            cursor: default;
+        }
+
+        /* Items que SI son enlace */
+        .gallery-item.has-link { cursor: pointer; }
+        .gallery-item a {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .link-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: var(--transition);
+            pointer-events: none;
+        }
+
+        .gallery-item.has-link:hover .link-badge {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .gallery-item img {
@@ -389,6 +421,7 @@
             background: rgba(0, 153, 255, 0.2);
             opacity: 0;
             transition: var(--transition);
+            pointer-events: none; /* no bloquea clics en <a> cuando la imagen tiene href */
         }
 
         .gallery-item:hover::after { opacity: 1; }
@@ -521,7 +554,7 @@
 
     <section id="about" class="about hidden">
         <div class="about-img">
-            <img src="FotoMe1.png" alt="Foto">
+            <img src="FotoMe1.jpg" alt="Foto">
         </div>
         <div class="about-text">
             <h2>José Carlos <br><span>Sánchez</span></h2>
@@ -579,12 +612,12 @@
             
             <ul style="margin-top: 30px; font-size: 1.1rem;">
                 <li style="margin-bottom: 15px;"><i class="fas fa-envelope" style="color:var(--accent); margin-right: 10px;"></i> joca3design@gmail.com</li>
-                <li><i class="fab fa-whatsapp" style="color:var(--accent); margin-right: 10px;"></i> +52 729 139 8021</li>
             </ul>
 
             <div class="social-links">
                 <a href="https://www.linkedin.com/in/joca3design/" target="_blank" class="social-btn"><i class="fab fa-linkedin-in"></i></a>
                 <a href="https://www.instagram.com/joca3design/" target="_blank" class="social-btn"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.artstation.com/joca3design" target="_blank" class="social-btn"><i class="fa fa-cube" aria-hidden="true"></i></a>
                 <a href="https://wa.me/527291083434" target="_blank" class="social-btn"><i class="fab fa-whatsapp"></i></a>
             </div>
         </div>
@@ -654,35 +687,30 @@
 
         // --- DYNAMIC GALLERY LOGIC ---
         
-        // Placeholder images configuration (Replace 'text' with real image URLs when ready)
-        // Since I don't have your images, I am using a placeholder service.
         const portfolioData = {
             '3d': [
-                'https://placehold.co/400x400/121212/0099ff?text=3D+Model+1',
-                'https://placehold.co/400x400/121212/0099ff?text=Environment',
-                'https://placehold.co/400x400/121212/0099ff?text=Character',
-                'https://placehold.co/400x400/121212/0099ff?text=Render',
-                'https://placehold.co/400x400/121212/0099ff?text=Animation',
-                'https://placehold.co/400x400/121212/0099ff?text=Sculpt'
+                { src: 'Imagenes/3D/3d1.jpg' },
+                { src: 'Imagenes/3D/3d2.jpg' },
+                { src: 'Imagenes/3D/3d3.jpg' },
+                { src: 'Imagenes/3D/3d4.jpg' },
+                { src: 'Imagenes/3D/3d5.jpg', href: 'https://www.instagram.com/p/CoTKJJtsW97/' },
+                { src: 'Imagenes/3D/3d6.jpg', href: 'https://www.instagram.com/hamikat_/reel/DETtZ03x78g/' }
             ],
             'graphic': [
-                'Imagenes/Diseño/Dis1.jpg',
-                'Imagenes/Diseño/Dis2.jpg',
-                'Imagenes/Diseño/Dis3.jpg',
-                'Imagenes/Diseño/Dis4.jpg',
-                'Imagenes/Diseño/Dis5.jpg',
-                'Imagenes/Diseño/Dis6.jpg'
+                // "href" es OPCIONAL. Si existe, la imagen se vuelve enlace (abre en nueva pestaña).
+                { src: 'Imagenes/Diseño/Dis1.jpg'},
+                { src: 'Imagenes/Diseño/Dis2.jpg', href: 'https://www.instagram.com/p/C_9PTPEt47H/' },
+                { src: 'Imagenes/Diseño/Dis3.jpg' },
+                { src: 'Imagenes/Diseño/Dis4.jpg' },
+                { src: 'Imagenes/Diseño/Dis5.jpg', href: 'https://www.instagram.com/p/DCXn1VTy2Be/' },
+                { src: 'Imagenes/Diseño/Dis6.jpg', }
             ],
             'ui': [
-                'https://placehold.co/400x400/121212/0099ff?text=App+Design',
-                'https://placehold.co/400x400/121212/0099ff?text=Web+Layout',
-                'https://placehold.co/400x400/121212/0099ff?text=Dashboard',
-                'https://placehold.co/400x400/121212/0099ff?text=Mobile+UI',
-                'https://placehold.co/400x400/121212/0099ff?text=Landing+Page',
-                'https://placehold.co/400x400/121212/0099ff?text=Wireframe',
-                'https://placehold.co/400x400/121212/0099ff?text=Prototype',
-                'https://placehold.co/400x400/121212/0099ff?text=Dark+Mode',
-                'https://placehold.co/400x400/121212/0099ff?text=Components'
+                { src: 'https://placehold.co/400x400/121212/0099ff?text=App+Design' },
+                { src: 'https://placehold.co/400x400/121212/0099ff?text=Web+Layout' },
+                { src: 'https://placehold.co/400x400/121212/0099ff?text=Dashboard' },
+                { src: 'https://placehold.co/400x400/121212/0099ff?text=Mobile+UI' },
+                { src: 'https://placehold.co/400x400/121212/0099ff?text=Landing+Page' }
             ]
         };
 
@@ -702,19 +730,45 @@
             };
             title.textContent = titles[category];
 
-            // Populate Grid with 9 images
+            // Populate Grid with images
             const images = portfolioData[category];
             
-            images.forEach((imgUrl, index) => {
+            images.forEach((imgData, index) => {
                 const item = document.createElement('div');
                 item.className = 'gallery-item';
+
+                // Permite dos formatos:
+                // 1) 'ruta/imagen.jpg'
+                // 2) { src: 'ruta/imagen.jpg', href: 'https://...' }
+                const src = (typeof imgData === 'string') ? imgData : imgData.src;
+                const href = (typeof imgData === 'string') ? null : (imgData.href || null);
+
+                if (href) item.classList.add('has-link');
+
                 // Add staggered animation delay
                 item.style.animation = `fadeIn 0.5s ease forwards ${index * 0.1}s`;
                 item.style.opacity = '0'; // Start hidden for animation
 
                 const img = document.createElement('img');
-                img.src = imgUrl;
-                item.appendChild(img);
+                img.src = src;
+
+                if (href) {
+                    const a = document.createElement('a');
+                    a.href = href;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.appendChild(img);
+                    item.appendChild(a);
+
+                    // Badge visual (solo decorativo)
+                    const badge = document.createElement('span');
+                    badge.className = 'link-badge';
+                    badge.innerHTML = '<i class="fas fa-up-right-from-square"></i>';
+                    item.appendChild(badge);
+                } else {
+                    item.appendChild(img);
+                }
+
                 grid.appendChild(item);
             });
 
