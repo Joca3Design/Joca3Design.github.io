@@ -681,6 +681,8 @@
         /* opcional: suavizar escalado */
         image-rendering: auto;
         filter: brightness(0.8);
+        transition: transform 0.1s linear; /* Suaviza micro-saltos de cálculo */
+        will-change: transform; /* Optimiza para la tarjeta de video */
       }
 
       /* Posiciones de ejemplo (ajústalas a gusto) */
@@ -1366,6 +1368,57 @@
         window.addEventListener("resize", requestRender, { passive: true });
 
         requestRender();
+      })();
+    </script>
+    <!--ICONOS FLOTANDO-->
+    <script>
+      (() => {
+        // Seleccionamos los contenedores de los iconos
+        const icons = [
+          document.getElementById('iconA'),
+          document.getElementById('iconB'),
+          document.getElementById('iconC')
+        ];
+
+        // Configuración del movimiento (ajusta estos valores para más o menos intensidad)
+        const config = {
+          amplitudeX: 15,  // Píxeles que se mueve a los lados
+          amplitudeY: 20,  // Píxeles que se mueve arriba/abajo
+          rotationMax: 5,  // Grados máximos de rotación
+          speed: 0.001     // Velocidad (más bajo = más lento/sutil)
+        };
+
+        // Asignamos una fase inicial aleatoria a cada icono para que no se muevan sincronizados
+        const states = icons.map(() => ({
+          phase: Math.random() * Math.PI * 2,
+          offset: Math.random() * 1000
+        }));
+
+        function animateFloating() {
+          const time = Date.now() * config.speed;
+
+          icons.forEach((icon, index) => {
+            if (!icon) return;
+
+            const s = states[index];
+            
+            // Calculamos movimientos suaves usando Seno y Coseno
+            const moveX = Math.sin(time + s.phase) * config.amplitudeX;
+            const moveY = Math.cos(time * 0.8 + s.phase) * config.amplitudeY;
+            const rotate = Math.sin(time * 0.5 + s.phase) * config.rotationMax;
+
+            // Aplicamos el transform sin romper el CSS original
+            // Nota: iconC tiene un translateX(-10%) en CSS, lo respetamos sumándolo
+            const extraCSS = index === 2 ? 'translateX(-10%) ' : '';
+            
+            icon.style.transform = `${extraCSS} translate(${moveX}px, ${moveY}px) rotate(${rotate}deg)`;
+          });
+
+          requestAnimationFrame(animateFloating);
+        }
+
+        // Iniciamos la animación
+        animateFloating();
       })();
     </script>
     <!--EASTER EGG-->
