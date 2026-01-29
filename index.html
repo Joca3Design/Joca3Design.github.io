@@ -30,7 +30,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <style>
-      /* --- VARIABLES & RESET --- */
+      /* --- VARIABLES --- */
       :root {
         --bg-color: #050505;
         --card-bg: #121212;
@@ -41,7 +41,7 @@
         --glass: rgba(255, 255, 255, 0.05);
         --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
       }
-
+      /* -- ESTILOS BASE --- */
       * {
         margin: 0;
         padding: 0;
@@ -78,7 +78,7 @@
         list-style: none;
       }
 
-      /* --- SPLASH SCREEN STYLES --- */
+      /* --- SPLASH SCREEN  --- */
       #splash-screen {
         position: fixed;
         top: 0;
@@ -673,19 +673,16 @@
         z-index: 10;
       }
 
-      /* Cada canvas de icono */
       .seq-canvas {
         position: absolute;
         width: 220px; /* tamaño visual */
         height: 220px; /* tamaño visual */
-        /* opcional: suavizar escalado */
         image-rendering: auto;
         filter: brightness(0.8);
         transition: transform 0.1s linear; /* Suaviza micro-saltos de cálculo */
         will-change: transform; /* Optimiza para la tarjeta de video */
       }
 
-      /* Posiciones de ejemplo (ajústalas a gusto) */
       #iconA {
         top: 18vh;
         left: 10vw;
@@ -764,7 +761,7 @@
 
       @media (max-width: 480px) {
         .gallery-grid {
-          grid-template-columns: 1fr; /* 1 col on small phones */
+          grid-template-columns: 1fr; 
         }
       }
     </style>
@@ -791,11 +788,9 @@
     </nav>
 
     <section class="scroll-seq" id="seq">
-      <!-- capa fixed encima de todo -->
       <div class="seq-layer">
         <canvas id="iconA" class="seq-canvas"></canvas>
         <canvas id="iconB" class="seq-canvas"></canvas>
-        <!-- Si quieres un tercero, descomenta: -->
         <canvas id="iconC" class="seq-canvas"></canvas>
       </div>
     </section>
@@ -915,7 +910,7 @@
             <i class="fa fa-pencil" aria-hidden="true"></i>
             <h3>Diseño Gráfico</h3>
             <p>
-              Estrategias visuales para redes sociales y medios impresos que
+              Estrategias visuales para <b>redes sociales y medios impresos</b> que
               comunican la identidad de marca con fuerza y claridad.
             </p>
           </div>
@@ -977,56 +972,94 @@
             class="social-btn"
             ><i class="fa fa-cube" aria-hidden="true"></i
           ></a>
+          <!--
           <a
-            href="https://wa.me/527291083434"
+            href="https://wa.me/527290000000"
             target="_blank"
             class="social-btn"
             ><i class="fab fa-whatsapp"></i
           ></a>
+          -->
         </div>
       </div>
-
       <div class="contact-form">
         <form
           action="https://formsubmit.co/joca3design@gmail.com"
           method="POST"
         >
+          <!-- CONFIGURACIÓN -->
           <input
             type="hidden"
             name="_subject"
-            value="Nuevo contacto de Portafolio!"
+            value="Nuevo contacto desde el portafolio"
           />
-          <input type="hidden" name="_captcha" value="false" />
+
           <input
             type="hidden"
             name="_next"
-            value="http://tupagina.com/gracias.html"
+            value="https://joca3design.github.io/gracias.html"
           />
+
+          <input type="hidden" name="_template" value="table" />
+
+          <input type="hidden" name="_captcha" value="false" />
+
+          <!-- CC opcional (en una sola línea) -->
+          <!--
+          <input
+            type="hidden"
+            name="_cc"
+            value="otrocorreo@email.com"
+          />
+          -->
+
+          <!-- Honeypot anti-spam -->
+          <input type="text" name="_honey" style="display:none" />
+
+          <!-- CAMPOS -->
           <div class="form-group">
-            <label>Nombre Completo</label>
+            <label>Nombre completo</label>
             <input type="text" name="name" required />
           </div>
+
           <div class="form-group">
-            <label>Correo Electrónico</label>
+            <label>Correo electrónico</label>
             <input type="email" name="email" required />
           </div>
+
           <div class="form-group">
             <label>Teléfono</label>
             <input type="tel" name="phone" />
           </div>
+
           <div class="form-group">
             <label>Mensaje</label>
             <textarea name="message" rows="5" required></textarea>
           </div>
+
+          <!-- PRIVACIDAD -->
+           <!--
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="privacy" required />
+            <label for="privacy">
+              Acepto la
+              <a href="/privacidad.html" target="_blank">
+                política de privacidad
+              </a>
+            </label>
+          </div>
+          -->
+
           <button
             type="submit"
             class="btn btn-fill"
             style="width: 100%; border: none"
           >
-            Enviar Mensaje
+            Enviar mensaje
           </button>
         </form>
       </div>
+
     </section>
 
     <footer>
