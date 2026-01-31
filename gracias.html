@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gracias | Joca3Design</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&family=Space+Grotesk:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+
+      body {
+        overflow: hidden; /* Evita scroll innecesario en esta vista */
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+
+      /* --- FONDO ANIMADO (Igual al Hero original) --- */
+      .bg-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60vw;
+        height: 60vw;
+        background: radial-gradient(
+          circle,
+          var(--accent-glow) 0%,
+          transparent 70%
+        );
+        filter: blur(80px);
+        opacity: 0.4;
+        z-index: -1;
+        animation: pulse 8s infinite alternate;
+      }
+
+      @keyframes pulse {
+        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.3; }
+        100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.5; }
+      }
+
+      /* --- CONTENEDOR PRINCIPAL --- */
+      .thank-you-card {
+        text-align: center;
+        padding: 50px;
+        max-width: 600px;
+        width: 90%;
+        background: rgba(18, 18, 18, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        
+        /* Animación de entrada de la tarjeta */
+        opacity: 0;
+        transform: translateY(30px);
+        animation: cardEntrance 1s cubic-bezier(0.23, 1, 0.32, 1) forwards 0.2s;
+      }
+
+      @keyframes cardEntrance {
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* --- ICONO ANIMADO --- */
+      .icon-wrapper {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 30px auto;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .icon-circle {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        box-shadow: 0 0 20px var(--accent-glow);
+        animation: circleRipple 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
+      }
+
+      .icon-check {
+        font-size: 3.5rem;
+        color: var(--accent);
+        z-index: 2;
+        transform: scale(0);
+        animation: checkPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.8s;
+      }
+
+      @keyframes circleRipple {
+        0% { transform: scale(0.8); opacity: 1; border-width: 2px; }
+        100% { transform: scale(1.8); opacity: 0; border-width: 0px; }
+      }
+
+      @keyframes checkPop {
+        0% { transform: scale(0); }
+        100% { transform: scale(1); text-shadow: 0 0 20px var(--accent); }
+      }
+
+      /* --- TEXTOS --- */
+      .thank-you-card h1 {
+        font-size: 3rem;
+        color: #fff;
+      }
+      
+      .thank-you-card h1 span {
+        color: var(--accent);
+      }
+
+      .thank-you-card p {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        margin-bottom: 40px;
+      }
+
+      /* --- BOTÓN (Estilo original) --- */
+      .btn {
+        display: inline-block;
+        padding: 12px 35px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: 2px solid var(--accent);
+        color: var(--accent);
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+        border-radius: var(--radius); /* Redondeado opcional para botón suelto */
+        transition: var(--transition);
+        background: transparent;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0%;
+        height: 100%;
+        background: var(--accent);
+        z-index: -1;
+        transition: var(--transition);
+      }
+
+      .btn:hover::before {
+        width: 100%;
+      }
+      .btn:hover {
+        color: #fff;
+        box-shadow: 0 0 25px var(--accent-glow);
+      }
+
+      /* --- RESPONSIVE --- */
+      @media (max-width: 768px) {
+        .thank-you-card h1 {
+          font-size: 2.2rem;
+        }
+        .thank-you-card {
+            padding: 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="bg-glow"></div>
+
+    <main class="thank-you-card">
+      <div class="icon-wrapper">
+        <div class="icon-circle"></div>
+        <div class="icon-circle" style="animation-delay: 0.5s"></div>
+        <i class="fas fa-check icon-check"></i>
+      </div>
+
+      <h1>¡Mensaje <br><span>Recibido!</span></h1>
+      
+      <p>
+        Gracias por contactarme. He recibido tu solicitud correctamente 
+        y me pondré en contacto contigo a la brevedad posible.
+      </p>
+
+      <a href="index.html" class="btn">
+        <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Volver al Inicio
+      </a>
+    </main>
+
+  </body>
+</html>
