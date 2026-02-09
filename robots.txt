@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /gracias.html
 
 Sitemap: https://joca3design.com/sitemap.xml

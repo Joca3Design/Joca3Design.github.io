@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&family=Space+Grotesk:wght@300;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
+    <link rel="shortcut icon" href="https://joca3design.com/favicon.ico" type="image/x-icon" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -29,6 +29,12 @@
     />
     <meta name="author" content="Joca3Design" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:title" content="Joca3Design – Diseñador Gráfico y Artista 3D" />
+    <meta property="og:description" content="Animación 3D, UI/UX y diseño visual con enfoque inmersivo." />
+    <meta property="og:image" content="https://joca3design.com/og-cover.jpg" />
+    <meta property="og:url" content="https://joca3design.com/" />
+    <meta property="og:type" content="website" />
+
 
   </head>
   <body>
@@ -376,18 +382,18 @@
       const portfolioData = {
         "3d": {
           "Modelado de Personajes": [
-            { src: "Imagenes/3D/Characters/1.jpg" },
-            { src: "Imagenes/3D/Characters/2.jpg" },
-            { src: "Imagenes/3D/Characters/3.jpg" },
-            { src: "Imagenes/3D/Characters/4.jpg" },
-            { src: "Imagenes/3D/Characters/5.jpg" },
-            { src: "Imagenes/3D/Characters/6.jpg" },
+            { src: "Imagenes/3D/Characters/1.jpg", alt:"Stylized 3D cyclops warrior character with axe and fur armor, rendered in Blender with dramatic lighting" },
+            { src: "Imagenes/3D/Characters/2.jpg", alt:"3D character holding a glowing torch in a dark fantasy environment, cinematic lighting in Blender" },
+            { src: "Imagenes/3D/Characters/3.jpg", alt:"Dark fantasy female character with antler headdress and mask, moody portrait render in Blender" },
+            { src: "Imagenes/3D/Characters/4.jpg", alt:"Stylized cartoon boy character in casual outfit, simple proportions and clean 3D shading" },
+            { src: "Imagenes/3D/Characters/5.jpg", alt:"Stylized humanoid robot character with glowing sword, sci-fi inspired 3D render in Blender" },
+            { src: "Imagenes/3D/Characters/6.jpg", alt:"Stylized 3D scene of a mother helping a child walk indoors, soft lighting and wholesome tone" },
           ],
           "Diseño de Entornos": [
             { src: "Imagenes/3D/Enviroments/1.jpg" },
-            { src: "Imagenes/3D/Enviroments/2.jpg" },
-            { src: "Imagenes/3D/Enviroments/3.jpg" },
-            { src: "Imagenes/3D/Enviroments/4.jpg" },
+            { src: "Imagenes/3D/Enviroments/2.jpg", alt:"Japanese-inspired wooden interior environment with warm lighting, architectural 3D render"},
+            { src: "Imagenes/3D/Enviroments/3.jpg", alt:"Stylized robot and child walking together toward a glowing structure, emotional 3D storytelling scene"},
+            { src: "Imagenes/3D/Enviroments/4.jpg", alt:"Modern kitchen interior visualization with wood cabinets and natural lighting, realistic 3D render"},
           ],
           /*
           "Animación": [
@@ -489,11 +495,13 @@
             const src = typeof imgData === "string" ? imgData : imgData.src;
             const href =
               typeof imgData === "string" ? null : imgData.href || null;
+            const alt = typeof imgData === "string" ? "" : (imgData.alt || "");
 
             // Image
             const img = document.createElement("img");
             img.src = src;
             img.loading = "lazy"; // Performance optimization
+            img.alt = alt;
 
             // Link Logic
             if (href) {
@@ -573,6 +581,7 @@
       document.head.appendChild(styleSheet);
     </script>
 
+    <!--ICONOS FLOTANDO-->
     <script>
       (() => {
         const section = document.getElementById("seq");
@@ -742,7 +751,6 @@
       })();
     </script>
 
-    <!--ICONOS FLOTANDO-->
     <script>
       (() => {
         // Seleccionamos los contenedores de los iconos
