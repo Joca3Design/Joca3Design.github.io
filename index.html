@@ -28,13 +28,26 @@
       content="diseñador gráfico, artista 3D, animación 3D, diseño visual, branding, motion graphics, edición de video, Blender, Photoshop, After Effects"
     />
     <meta name="author" content="Joca3Design" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Joca3Design – Diseñador Gráfico y Artista 3D" />
     <meta property="og:description" content="Animación 3D, UI/UX y diseño visual con enfoque inmersivo." />
     <meta property="og:image" content="https://joca3design.com/og-cover.jpg" />
     <meta property="og:url" content="https://joca3design.com/" />
     <meta property="og:type" content="website" />
-
+    
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "José Carlos Sánchez",
+        "jobTitle": "3D Artist & Graphic Designer",
+        "url": "https://joca3design.com",
+        "sameAs": [
+          "https://www.linkedin.com/in/joca3design/",
+          "https://www.instagram.com/joca3design/",
+          "https://www.artstation.com/joca3design"
+        ]
+      }
+    </script>
 
   </head>
   <body>
@@ -382,18 +395,18 @@
       const portfolioData = {
         "3d": {
           "Modelado de Personajes": [
-            { src: "Imagenes/3D/Characters/1.jpg", alt:"Stylized 3D cyclops warrior character with axe and fur armor, rendered in Blender with dramatic lighting" },
-            { src: "Imagenes/3D/Characters/2.jpg", alt:"3D character holding a glowing torch in a dark fantasy environment, cinematic lighting in Blender" },
-            { src: "Imagenes/3D/Characters/3.jpg", alt:"Dark fantasy female character with antler headdress and mask, moody portrait render in Blender" },
-            { src: "Imagenes/3D/Characters/4.jpg", alt:"Stylized cartoon boy character in casual outfit, simple proportions and clean 3D shading" },
-            { src: "Imagenes/3D/Characters/5.jpg", alt:"Stylized humanoid robot character with glowing sword, sci-fi inspired 3D render in Blender" },
-            { src: "Imagenes/3D/Characters/6.jpg", alt:"Stylized 3D scene of a mother helping a child walk indoors, soft lighting and wholesome tone" },
+            { src: "Imagenes/3D/Characters/1.jpg", alt:"Personaje guerrero cíclope en 3D con hacha y armadura de piel, estilo estilizado renderizado en Blender con iluminación dramática" },
+            { src: "Imagenes/3D/Characters/2.jpg", alt:"Personaje 3D sosteniendo una antorcha luminosa en un entorno de fantasía oscura, iluminación cinematográfica en Blender" },
+            { src: "Imagenes/3D/Characters/3.jpg", alt:"Personaje femenino de fantasía oscura con tocado de astas y máscara, retrato 3D con atmósfera intensa en Blender" },
+            { src: "Imagenes/3D/Characters/4.jpg", alt:"Personaje infantil caricaturesco en 3D con vestimenta casual, proporciones simples y sombreado limpio" },
+            { src: "Imagenes/3D/Characters/5.jpg", alt:"Personaje robot humanoide estilizado con espada luminosa, render 3D de ciencia ficción realizado en Blender" },
+            { src: "Imagenes/3D/Characters/6.jpg", alt:"Escena 3D estilizada de una madre ayudando a caminar a un niño en interior, iluminación suave y tono emotivo" },
           ],
           "Diseño de Entornos": [
-            { src: "Imagenes/3D/Enviroments/1.jpg" },
-            { src: "Imagenes/3D/Enviroments/2.jpg", alt:"Japanese-inspired wooden interior environment with warm lighting, architectural 3D render"},
-            { src: "Imagenes/3D/Enviroments/3.jpg", alt:"Stylized robot and child walking together toward a glowing structure, emotional 3D storytelling scene"},
-            { src: "Imagenes/3D/Enviroments/4.jpg", alt:"Modern kitchen interior visualization with wood cabinets and natural lighting, realistic 3D render"},
+            { src: "Imagenes/3D/Enviroments/1.jpg", alt:"Estación de trabajo minimalista con PC, monitores dobles y arte digital de temática oscura" },
+            { src: "Imagenes/3D/Enviroments/2.jpg", alt:"Entorno interior de madera inspirado en arquitectura japonesa, render 3D con iluminación cálida"},
+            { src: "Imagenes/3D/Enviroments/3.jpg", alt:"Robot estilizado y niño caminando juntos hacia una estructura luminosa, escena narrativa en 3D"},
+            { src: "Imagenes/3D/Enviroments/4.jpg", alt:"Visualización 3D de cocina moderna con gabinetes de madera e iluminación natural, estilo realista"},
           ],
           /*
           "Animación": [
@@ -406,14 +419,15 @@
         },
         graphic: {
           "Redes Sociales": [
-            { src: "Imagenes/Diseño/Redes Sociales/1.jpg" },
-            { src: "Imagenes/Diseño/Redes Sociales/2.jpg" },
-            { src: "Imagenes/Diseño/Redes Sociales/3.jpg" },
+            { src: "Imagenes/Diseño/Redes Sociales/1.jpg", alt: "Diseño para redes sociales de inmobiliaria promocionando casas nuevas en Toluca, campaña patriótica con identidad visual verde" },
+            { src: "Imagenes/Diseño/Redes Sociales/2.jpg", alt:"Post publicitario para redes sociales de inmobiliaria por San Valentín, ilustración creativa sobre compra de vivienda en pareja" },
+            { src: "Imagenes/Diseño/Redes Sociales/3.jpg", alt: "Diseño gráfico para redes sociales de inmobiliaria durante Buen Fin, promoción de compra de casa con concepto visual llamativo" },
+            {src: "/Imagenes/Diseño/Redes Sociales/5.jpg", alt:"Diseño temático de día de muertos para redes sociales de inmobiliaria Feli Crece, gráfica decorativa con identidad de marca y datos de contacto"}
           ],
           "Medios Impresos": [
-            { src: "Imagenes/Diseño/Medios Impresos/1.jpg" },
-            { src: "Imagenes/Diseño/Medios Impresos/2.jpg" },
-            { src: "Imagenes/Diseño/Medios Impresos/3.jpg" },
+            { src: "Imagenes/Diseño/Medios Impresos/1.jpg", alt: "Diseño de tarjetas de presentación corporativas para Pronamex, identidad visual en tonos verdes y acabado profesional" },
+            { src: "Imagenes/Diseño/Medios Impresos/2.jpg", alt:"Diseño gráfico de menú impreso para restaurante, tarjetas promocionales con identidad visual cálida”" },
+            { src: "Imagenes/Diseño/Medios Impresos/3.jpg", alt:"Diseño de espectacular publicitario para universidad CUAN, anuncio exterior de inscripciones abiertas" },
           ],
         },
         ui: {
