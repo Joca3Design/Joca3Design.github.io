@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layered 3D Instagram Grid</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #d8d8d8; /* Slightly darker to make shadows pop */
+            --card-bg: #ffffff;
+            --insta-blue: #8faed1;
+            --card-width: 280px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        .scene {
+            perspective: 2000px; /* Increased perspective for deeper depth */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .carousel-track {
+            display: grid;
+            grid-template-columns: repeat(6, var(--card-width));
+            gap: 40px;
+            
+            /* Tilted 3D perspective */
+            transform: rotateX(35deg) rotateZ(-15deg) translateY(-20%);
+            
+            /* Infinite movement */
+            animation: scrollDown 40s linear infinite; /* Slowed down to appreciate the effects */
+            transition: animation-play-state 0.3s;
+        }
+
+        .carousel-track:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes scrollDown {
+            0% { transform: rotateX(35deg) rotateZ(-15deg) translateY(-40%); }
+            100% { transform: rotateX(35deg) rotateZ(-15deg) translateY(0%); }
+        }
+
+        /* --- THE POST CARD --- */
+        .post-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            backface-visibility: hidden;
+
+            /* EFFECT 1: Deeper Static Drop Shadow for the Card */
+            box-shadow: 0 15px 40px rgba(0,0,0,0.18); 
+
+            /* CRITICAL: Allows child elements (the image) to have their own Z-space */
+            transform-style: preserve-3d;
+            
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .post-header {
+            font-weight: 600;
+            font-family: 'Kaushan script';
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #333;
+            /* Subtly lift text above card surface */
+            transform: translateZ(5px);
+        }
+
+        /* --- THE IMAGE PLACEHOLDER --- */
+        .image-placeholder {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: var(--insta-blue);
+            border-radius: 4px;
+            margin-bottom: 12px;
+
+            /* EFFECT 2: Static Drop Shadow for the Image (resting on the card) */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15); 
+
+            /* Add base separation and transition for interaction */
+            transform: translateZ(10px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+        }
+
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            /* Subtly lift icons */
+            transform: translateZ(5px);
+        }
+
+        /* --- GLOBAL BLUR EFFECT ON TRACK HOVER --- */
+        .carousel-track:hover .post-card {
+            filter: blur(8px);
+            opacity: 0.3;
+            transform: scale(0.9);
+        }
+
+        /* --- ACTIVE CARD INTERACTIONS (When Hovering Specific Card) --- */
+        .carousel-track .post-card:hover {
+            filter: blur(0);
+            opacity: 1;
+            z-index: 1000;
+
+            /* PHASE 1: Lift the entire card base high above the grid */
+            transform: scale(1.2) translateZ(180px); 
+
+            /* EFFECT 1 Update: Extreme deep shadow for floating card */
+            box-shadow: 0 50px 100px rgba(0,0,0,0.35); 
+        }
+
+        /* PHASE 2: Move the image placeholder higher relative to the card */
+        .carousel-track .post-card:hover .image-placeholder {
+            /* Now separated by 70px from the card surface, which is itself at 180px */
+            transform: translateZ(70px) translateX(5px) translateY(-2px) scale(1.02);
+            /* EFFECT 2 Update: Enhance image shadow to match its separation */
+            filter: drop-shadow(-5px 8px 6px #0004); 
+            transition: .3s ease-in;
+        }
+        
+        @media (max-width: 768px) {
+            .scene{
+                zoom: 60%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div class="carousel-track" id="track">
+            </div>
+    </div>
+
+    <script>
+        const track = document.getElementById('track');
+        
+        // Function to create a single card
+        function createCard() {
+            return `
+                <div class="post-card">
+                    <div class="post-header">Instagram</div>
+                    <div class="image-placeholder"></div>
+                    <div class="post-footer">
+                        <span style="color: red;"><i class="fa fa-heart" aria-hidden="true"></i></span>
+                        <span><i class="fa fa-bookmark-o" aria-hidden="true"></i> <i class="fa fa-paper-plane-o" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate enough cards for smooth infinite loop in 6 columns
+        let cardHTML = '';
+        // 6 columns * 8 rows = 48 cards minimum per set
+        for (let i = 0; i < 60; i++) {
+            cardHTML += createCard();
+        }
+
+        // Fill the track and double it for the infinite loop illusion
+        track.innerHTML = cardHTML + cardHTML;
+    </script>
+</body>
+</html>
