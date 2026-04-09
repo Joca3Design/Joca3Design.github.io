@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impactful Scroll Deck</title>
+    <style>
+
+        :root {
+          /* Colores base */
+          --bg-color: #050505;
+          --card-bg: #121212;
+          --text-main: #ffffff;
+          --text-muted: #b3b3b3;
+
+          /* Accent principal */
+          --accent: #0099ff;
+          --accent-glow: rgba(0, 153, 255, 0.4);
+
+          /* Glass / UI */
+          --glass: rgba(255, 255, 255, 0.05);
+          --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+
+          /* Scrollbar mapping */
+          --sb-track: var(--glass);
+          --sb-thumb: var(--accent);
+          --sb-thumb-hover: #4db8ff; /* versión más clara del accent */
+          --sb-glow: var(--accent-glow);
+
+          /* Tamaño y forma */
+          --radius: 999px;
+          --size: 12px;
+
+          --transition-speed: 0.8s; /* Add this line */
+          --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);  
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        
+
+        /* 1. Scroll Snapping Container */
+        .container {
+            height: 100vh;
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+
+            /* Hide scrollbar for Chrome, Safari and Opera */
+            &::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* Hide scrollbar for IE, Edge and Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        /* 2. Slide Styling */
+        section {
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 7rem 0;
+            scroll-snap-align: start;
+            position: relative;
+            perspective: 1000px;
+            justify-content: flex-start;
+        }
+
+        .content {
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.8) translateY(50px) rotateX(-15deg);
+            filter: blur(10px);
+            transition: all var(--transition-speed) cubic-bezier(0.22, 1, 0.36, 1);
+            margin-top: 10px;
+        }
+
+        /* Triggered by JS when in view */
+        section.active .content {
+            opacity: 1;
+            transform: scale(1) translateY(0) rotateX(0);
+            filter: blur(0);
+        }
+
+        h1 {
+            font-size: clamp(7.3rem, 10vw, 6rem);
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 3rem;
+            width: 38vw;
+            text-align: left;
+            line-height: 6rem;
+            margin: auto;
+            margin-bottom: 10px;
+        }
+
+        
+        h1 span{
+          color: var(--accent);
+          display: block;
+          text-align: right;
+        }
+
+
+        p {
+            font-size: 1.3rem;
+            color: #b9b9b9;
+            max-width: 39vw;
+            margin: auto;
+            margin-top: 40px;
+        }
+
+        /* 3. Progress Bar / Navigation */
+        .nav-dots {
+            position: fixed;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .dot-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 90vw;
+            text-decoration: none;
+            group: hover;
+        }
+
+        .label {
+            color: var(--accent);
+            margin-right: 15px;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #444;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .dot-wrapper:hover .label {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .dot-wrapper.active .dot {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+            transform: scale(1.3);
+        }
+
+        /* Background Accents */
+        .bg-text {
+            position: absolute;
+            font-size: 28em;
+            font-weight: 900;
+            color: rgba(255,255,255,0.03);
+            z-index: -1;
+            user-select: none;
+            line-height: 272px;
+            width: 77vw;
+        }
+        .bg-text .line2{
+            text-justify: ;
+        }
+        
+        iframe{
+          width: 100vw;
+          position: absolute;
+          bottom: 0;
+          height: 40%;
+        }
+
+    </style>
+    
+    <!--LEGACY STYLES-->
+    <style>
+      /* --- NAVBAR --- */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 20px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1000;
+        background: rgba(5, 5, 5, 0.8);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 900;
+        letter-spacing: -1px;
+      }
+      .logo span {
+        color: var(--accent);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 30px;
+      }
+      .nav-links a {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-muted);
+      }
+      .nav-links a:hover {
+        color: var(--accent);
+      }
+
+
+      /* --- UI COMPONENTS --- */
+      .btn {
+        display: inline-block;
+        padding: 12px 30px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: 2px solid var(--accent);
+        color: var(--accent);
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+        cursor: pointer;
+        font-size: 0.9rem;
+        background: transparent;
+        border-radius: 15px;
+        background-color: #00000063;
+        backdrop-filter: blur(5px);
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0%;
+        height: 100%;
+        background: var(--accent);
+        z-index: -1;
+        transition: var(--transition);
+      }
+
+      .btn:hover::before {
+        width: 100%;
+      }
+      .btn:hover {
+        color: #fff;
+        box-shadow: 0 0 20px var(--accent-glow);
+      }
+
+      .btn-fill {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-fill:hover {
+        background: transparent;
+        color: var(--accent);
+      }
+
+      .btn-sm {
+        padding: 8px 20px;
+        font-size: 0.8rem;
+        margin-top: 20px;
+        width: 100%;
+        text-align: center;
+      }
+
+      a {
+        text-decoration: none;
+        color: inherit;
+        transition: var(--transition);
+      }
+    </style>
+
+    <style>
+      @media (max-width: 768px) {
+        p{
+          max-width: 75vw;
+          margin-top: 0;
+          font-size: 1rem;
+        }
+
+        h1{
+          width: 80vw;
+          font-size: 4rem;
+          line-height: 1;
+          margin-bottom: 1.3rem;
+        }
+        .bg-text{
+          font-size: 12em;
+          line-height: 110px;
+          width: 90vw;
+        }
+
+        .nav-dots{
+          right: 17px;
+          top: 87%;
+        }
+      }
+    </style>
+</head>
+<body>
+    <nav>
+      <div style="display: flex; gap: 10px">
+        <img src="Logo_nav.png" alt="" height="35px" />
+        <div class="logo">JOCA3<span>DESIGN</span></div>
+      </div>
+      <a href="#contact" class="btn">Hablemos</a>
+    </nav>
+
+    <div class="nav-dots">
+        <a href="#slide1" class="dot-wrapper active" data-slide="slide1">
+            <span class="label">Intro</span>
+            <div class="dot"></div>
+        </a>
+        <a href="#slide2" class="dot-wrapper" data-slide="slide2">
+            <span class="label">The Concept</span>
+            <div class="dot"></div>
+        </a>
+        <a href="#slide3" class="dot-wrapper" data-slide="slide3">
+            <span class="label">Smooth Tech</span>
+            <div class="dot"></div>
+        </a>
+        <a href="#slide4" class="dot-wrapper" data-slide="slide4">
+            <span class="label">Finalize</span>
+            <div class="dot"></div>
+        </a>
+      </div>
+
+    <div class="container">
+        <section id="slide1">
+            <div class="bg-text">01</div>
+            <div class="content">
+                <h1>Sobre mi</h1>
+                <p>Diseñador de medios digitales especializado en <strong>contenido multidimensional</strong>, con experiencia en creación visual para entornos digitales, <strong>edición, animación y producción gráfica</strong>. Mi enfoque se centra en desarrollar soluciones visuales efectivas que integren creatividad y técnica, manteniéndome en constan constante evolución dentro de una industria dinámica. Busco aportar valor mediante soluciones visuales innovadoras que generen experiencias inmersivas y <strong>de alto impacto.</strong></p>
+            </div>
+        </section>
+
+        <section id="slide2">
+            <div class="bg-text">02</div>
+            <div class="content">
+            <h1>Redes <span>Sociales</span></h1>
+            <p>Contenido estratégico y visual para <strong>redes sociales</strong>, enfocado en impacto, retención y posicionamiento de marca. Desarrollo <strong>reels, videos, posts y carruseles para Instagram, Facebook y TikTok</strong>, cuidando tanto la estética como la intención comunicativa.</p><br>
+            </div>
+            <iframe src="https://joca3design.com/igcards.html" title="description"></iframe>
+        </section>
+
+        <section id="slide3">
+            <div class="bg-text">03</div>
+            <div class="content">
+                <h1>Precision</h1>
+                <p>Snapping ensures your content is always perfectly framed.</p>
+            </div>
+        </section>
+
+        <section id="slide4">
+            <div class="bg-text">04</div>
+            <div class="content">
+                <h1>Elevate</h1>
+                <p>Ready to build something extraordinary?</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const sections = document.querySelectorAll('section');
+        const navDots = document.querySelectorAll('.dot-wrapper');
+
+        // Intersection Observer logic to trigger animations and update nav
+        const options = {
+            threshold: 0.6 // Trigger when 60% of the slide is visible
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Add active class to slide
+                    entry.target.classList.add('active');
+                    
+                    // Update dots
+                    const id = entry.target.getAttribute('id');
+                    navDots.forEach(dot => {
+                        dot.classList.toggle('active', dot.dataset.slide === id);
+                    });
+                } else {
+                    entry.target.classList.remove('active');
+                }
+            });
+        }, options);
+
+        sections.forEach(section => observer.observe(section));
+    </script>
+</body>
+</html>
