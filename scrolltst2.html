@@ -183,7 +183,7 @@
             position: absolute;
             font-size: 28em;
             font-weight: 900;
-            color: rgba(255,255,255,0.03);
+            color: rgba(255, 255, 255, 0.060);
             z-index: -1;
             user-select: none;
             line-height: 272px;
@@ -331,7 +331,98 @@
           right: 17px;
           top: 87%;
         }
+
+        .nav .btn{
+          padding: 10px 10px;
+        }
       }
+    </style>
+
+    <!--logos-->
+    <style>
+
+      /* Carousel Container */
+      .logo-carousel-container {
+          width: 100vw;
+          height: 7vw; /* Your requested height */
+          position: absolute;
+          bottom: 0;
+          background: #ffffff; /* User requested white background */
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      }
+
+      /* The infinite track */
+      .logo-track {
+          display: flex;
+          width: max-content; /* Allows track to be as long as needed */
+          animation: scroll-infinite 30s linear infinite;
+      }
+
+      .logo-item {
+          flex-shrink: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 0 40px;
+      }
+
+      .logo-item img {
+          height: 4vw; /* Scale logos based on viewport */
+          width: auto;
+          object-fit: contain;
+          filter: brightness(0.2); /* Makes logos dark/professional on the white bg */
+          transition: var(--transition);
+      }
+
+      .logo-item img:hover {
+          filter: brightness(1);
+          transform: scale(1.1);
+      }
+
+      /* Seamless Loop Animation */
+      @keyframes scroll-infinite {
+          0% {
+              transform: translateX(0);
+          }
+          100% {
+              /* This moves exactly half the track width */
+              transform: translateX(-50%);
+          }
+      }
+
+      /* Faded Edges for that 'Spectacular' look */
+      .logo-carousel-container::before,
+      .logo-carousel-container::after {
+          content: "";
+          height: 100%;
+          width: 15vw;
+          position: absolute;
+          z-index: 2;
+          pointer-events: none;
+      }
+
+      .logo-carousel-container::before {
+          left: 0;
+          background: linear-gradient(to right, white, transparent);
+      }
+
+      .logo-carousel-container::after {
+          right: 0;
+          background: linear-gradient(to left, white, transparent);
+      }
+
+      @media(max-width: 768px) {
+        .logo-carousel-container {
+          height: 12vh;
+        }
+        .logo-item img{
+          height: 15vw;
+        }
+      }
+
     </style>
 </head>
 <body>
@@ -369,6 +460,12 @@
                 <h1>Sobre mi</h1>
                 <p>Diseñador de medios digitales especializado en <strong>contenido multidimensional</strong>, con experiencia en creación visual para entornos digitales, <strong>edición, animación y producción gráfica</strong>. Mi enfoque se centra en desarrollar soluciones visuales efectivas que integren creatividad y técnica, manteniéndome en constan constante evolución dentro de una industria dinámica. Busco aportar valor mediante soluciones visuales innovadoras que generen experiencias inmersivas y <strong>de alto impacto.</strong></p>
             </div>
+            <div class="logo-carousel-container">
+              <div class="logo-track">
+                  <div class="logo-item"><img src="https://pronamex.mx/Imagenes/logo.png" alt="Logo"></div>
+                  <div class="logo-item"><img src="https://images.builderservices.io/s/cdn/v1.0/i/m?url=https%3A%2F%2Fstorage.googleapis.com%2Fproduction-hostgator-mexico-v1-0-0%2F880%2F916880%2FPWIW40Fu%2Ffd59235513874fe0a0a6c6372c6c3abc&methods=resize%2C500%2C5000" alt="Logo"></div>
+              </div>
+          </div>
         </section>
 
         <section id="slide2">
@@ -425,5 +522,6 @@
 
         sections.forEach(section => observer.observe(section));
     </script>
+
 </body>
 </html>
