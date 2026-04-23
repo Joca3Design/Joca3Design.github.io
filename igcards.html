@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap" rel="stylesheet">
     
     <!--BASE-->
-
+    
     <style>
         :root {
             --bg-color: #d8d8d8; /* Slightly darker to make shadows pop */
@@ -118,11 +118,10 @@
         }
 
         /* --- GLOBAL BLUR EFFECT ON TRACK HOVER --- */
-        .carousel-track:hover .post-card {
-            filter: blur(8px);
-            opacity: 0.3;
-            transform: scale(0.9);
-        }
+       .carousel-track:hover .post-card {
+    opacity: 0.3;
+    transform: scale(0.95);
+}
 
         /* --- ACTIVE CARD INTERACTIONS (When Hovering Specific Card) --- */
         .carousel-track .post-card:hover {
@@ -348,7 +347,7 @@ function createCard(imgUrl) {
 }
 
 // 3. Logic to distribute images evenly and randomly
-let totalSlots = 60;
+let totalSlots = 30;
 let finalImagePool = [];
 
 for (let i = 0; i < totalSlots; i++) {
