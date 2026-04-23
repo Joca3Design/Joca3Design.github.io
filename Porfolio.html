@@ -96,7 +96,6 @@
             font-size: 1.25rem;
             color: var(--text-muted);
             line-height: 1.5;
-            backdrop-filter: blur(4px);
         }
 
         /* background huge numbers */
@@ -464,7 +463,7 @@
 
                     .icon-btn:hover {
                         color: var(--accent);
-                        transition: all .5s ease;
+                        transition: color .5s ease;
                     }
 
                     #slide1-btn-wrapper{
@@ -724,129 +723,136 @@
         </section>
 
         <script>
-            const videoGrid = document.querySelector('.video-grid');
-            const videoItems = Array.from(document.querySelectorAll('.video-item'));
-            const videos = videoItems.map(item => item.querySelector('video'));
+(function() {
+    const videoGrid = document.querySelector('.video-grid');
+    const videoItems = Array.from(document.querySelectorAll('.video-item'));
+    const videos = videoItems.map(item => item.querySelector('video'));
 
-            let autoplayEnabled = true;
-            let hoverMode = false;
-            let currentIndex = 0;
-            let resumeTimer = null;
+    let autoplayEnabled = false;   // off by default
+    let hoverMode = false;
+    let currentIndex = 0;
+    let resumeTimer = null;
+    let observerActive = false;
 
-            function clearActiveState() {
-                videoItems.forEach(item => item.classList.remove('is-active'));
+    function clearActiveState() {
+        videoItems.forEach(item => item.classList.remove('is-active'));
+    }
+
+    function setActiveIndex(index) {
+        index = (index + videoItems.length) % videoItems.length;
+        currentIndex = index;
+        clearActiveState();
+        videoItems[index]?.classList.add('is-active');
+    }
+
+    function pauseAll(reset = false) {
+        videos.forEach(v => {
+            v.pause();
+            if (reset) try { v.currentTime = 0; } catch (e) {}
+        });
+    }
+
+    function playVideoAt(index) {
+        if (!autoplayEnabled || hoverMode) return;
+        clearTimeout(resumeTimer);
+        videoGrid?.classList.add('autoplay-active');
+        setActiveIndex(index);
+        pauseAll(false);
+        videos[index]?.play().catch(() => {});
+    }
+
+    function nextVideo() {
+        if (!autoplayEnabled || hoverMode) return;
+        const next = currentIndex + 1;
+        if (next >= videos.length) {
+            // Loop back to first
+            playVideoAt(0);
+            return;
+        }
+        playVideoAt(next);
+    }
+
+    function enterHover(index) {
+        hoverMode = true;
+        clearTimeout(resumeTimer);
+        videoGrid?.classList.remove('autoplay-active');
+        setActiveIndex(index);
+        pauseAll(false);
+        videos[index]?.play().catch(() => {});
+    }
+
+    function maybeResume() {
+        clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(() => {
+            const anyHover = videoItems.some(item => item.matches(':hover'));
+            if (!anyHover) {
+                hoverMode = false;
+                if (autoplayEnabled) playVideoAt(currentIndex);
             }
+        }, 120);
+    }
 
-            function setActiveIndex(index) {
-                currentIndex = (index + videoItems.length) % videoItems.length;
-                clearActiveState();
-                const activeItem = videoItems[currentIndex];
-                if (activeItem) activeItem.classList.add('is-active');
-            }
+    // ---- hover handers ----
+    videoItems.forEach((item, idx) => {
+        item.addEventListener('mouseenter', () => {
+            if (!autoplayEnabled) return;
+            enterHover(idx);
+        });
+        item.addEventListener('mouseleave', () => {
+            const vid = videos[idx];
+            if (vid) vid.pause();
+            if (hoverMode) maybeResume();
+        });
+    });
 
-            function pauseAll(reset = false) {
-                videos.forEach((video) => {
-                    video.pause();
-                    if (reset) {
-                        try { video.currentTime = 0; } catch (err) {}
-                    }
-                });
-            }
+    // 'ended' event
+    videos.forEach((vid, idx) => {
+        vid.addEventListener('ended', () => {
+            if (hoverMode) return;
+            nextVideo();
+        });
+    });
 
-            function playVideoAt(index) {
-                const safeIndex = (index + videos.length) % videos.length;
-                const video = videos[safeIndex];
-                const item = videoItems[safeIndex];
-                if (!video || !item) return;
-
-                clearTimeout(resumeTimer);
+    // ---- IntersectionObserver to control autoplay ----
+    const slide4 = document.getElementById('slide4');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Start autoplay
                 autoplayEnabled = true;
                 hoverMode = false;
-
-                if (videoGrid) videoGrid.classList.add('autoplay-active');
-                setActiveIndex(safeIndex);
-                pauseAll(false);
-
-                const attemptPlay = video.play();
-                if (attemptPlay && typeof attemptPlay.catch === 'function') {
-                    attemptPlay.catch(() => {});
-                }
-            }
-
-            function nextAutoplayVideo() {
-                if (!autoplayEnabled || hoverMode) return;
-                const nextIndex = currentIndex + 1;
-                if (nextIndex >= videos.length) {
-                    // Loop back to the first reel. Remove this line if you prefer it to stop on the last one.
-                    playVideoAt(0);
-                    return;
-                }
-                playVideoAt(nextIndex);
-            }
-
-            function enterHoverMode(index) {
-                hoverMode = true;
-                autoplayEnabled = false;
                 clearTimeout(resumeTimer);
-                if (videoGrid) videoGrid.classList.remove('autoplay-active');
-                setActiveIndex(index);
-                pauseAll(false);
-
-                const video = videos[index];
-                if (video) {
-                    const attemptPlay = video.play();
-                    if (attemptPlay && typeof attemptPlay.catch === 'function') {
-                        attemptPlay.catch(() => {});
-                    }
-                }
-            }
-
-            function maybeResumeAutoplay() {
-                clearTimeout(resumeTimer);
-                resumeTimer = setTimeout(() => {
-                    const anyHover = videoItems.some(item => item.matches(':hover'));
-                    if (!anyHover) {
-                        hoverMode = false;
-                        autoplayEnabled = true;
-                        playVideoAt(currentIndex);
-                    }
-                }, 120);
-            }
-
-            videoItems.forEach((item, index) => {
-                const video = item.querySelector('video');
-
-                item.addEventListener('mouseenter', () => {
-                    enterHoverMode(index);
-                });
-
-                item.addEventListener('mouseleave', () => {
-                    video.pause();
-                    if (hoverMode) {
-                        maybeResumeAutoplay();
-                    }
-                });
-
-                video.addEventListener('ended', () => {
-                    if (hoverMode) return;
-                    nextAutoplayVideo();
-                });
-            });
-
-            // Start autoplay from reel 1 on load.
-            window.addEventListener('load', () => {
-                setTimeout(() => {
-                    playVideoAt(0);
-                }, 250);
-            });
-
-            // Safety: if the tab becomes visible again, continue from the active reel.
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden && autoplayEnabled && !hoverMode) {
+                // If nothing is already playing, start from currentIndex
+                if (!videos[currentIndex] || videos[currentIndex].paused) {
                     playVideoAt(currentIndex);
                 }
-            });
-        </script>
+                observerActive = true;
+            } else {
+                // Stop everything
+                autoplayEnabled = false;
+                hoverMode = false;
+                clearTimeout(resumeTimer);
+                videoGrid?.classList.remove('autoplay-active');
+                clearActiveState();
+                pauseAll(true);
+                observerActive = false;
+            }
+        });
+    }, { threshold: 0.3 });
+
+    observer.observe(slide4);
+
+    // Tab visibility backup
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            autoplayEnabled = false;
+            pauseAll(true);
+        } else if (observerActive) {
+            autoplayEnabled = true;
+            playVideoAt(currentIndex);
+        }
+    });
+})();        </script>
 
         <section id="slide5">
             <div class="bg-text">05</div>
