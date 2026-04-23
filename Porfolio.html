@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Impactful Scroll Deck | Cinematic Snap Scroll</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Marck+Script&display=swap" rel="stylesheet">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <style>
         /* ---------- GLOBAL RESET & VARIABLES ---------- */
         * {
@@ -19,6 +26,8 @@
             --text-main: #ffffff;
             --text-muted: #b3b3b3;
             --accent: #0099ff;
+            --cursor-color: #0099ff; /* <--- ADD THIS LINE */
+            --accent-gradient: linear-gradient(90deg, rgba(0, 153, 255, 1) 0%, rgba(162, 87, 255, 1);)
             --accent-glow: rgba(0, 153, 255, 0.4);
             --glass: rgba(255, 255, 255, 0.05);
             --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -63,7 +72,6 @@
 
         /* animated content with 3D entrance */
         .content {
-            text-align: center;
             opacity: 0;
             transform: scale(0.85) translateY(60px) rotateX(-12deg);
             filter: blur(12px);
@@ -80,16 +88,13 @@
         h1 {
             font-size: clamp(3rem, 8vw, 5.5rem);
             font-weight: 800;
-            text-transform: uppercase;
             letter-spacing: -2px;
             color: var(--text-main);
-            margin-bottom: 1.2rem;
         }
 
         p {
             font-size: 1.25rem;
             color: var(--text-muted);
-            max-width: 600px;
             line-height: 1.5;
             backdrop-filter: blur(4px);
         }
@@ -99,7 +104,7 @@
             position: absolute;
             font-size: 28vw;
             font-weight: 900;
-            color: rgba(255, 255, 255, 0.098);
+            color: rgba(255, 255, 255, 0.058);
             z-index: -1;
             user-select: none;
             top: 5%;
@@ -126,7 +131,7 @@
         }
 
         .logo {
-            font-size: 1.45rem;
+            font-size: 2rem;
             font-weight: 800;
             letter-spacing: -0.5px;
         }
@@ -146,7 +151,6 @@
             position: relative;
             overflow: hidden;
             z-index: 1;
-            cursor: pointer;
             font-size: 0.85rem;
             background: rgba(0,0,0,0.5);
             backdrop-filter: blur(5px);
@@ -173,6 +177,10 @@
             border-color: var(--accent);
         }
 
+        nav .btn{
+            font-size: large;
+        }
+
         a{
             text-decoration: none;
         }
@@ -194,7 +202,6 @@
             align-items: center;
             justify-content: flex-end;
             text-decoration: none;
-            cursor: pointer;
             transition: 0.2s;
         }
 
@@ -306,10 +313,60 @@
             .btn { padding: 6px 20px; font-size: 0.75rem; }
         }
     </style>
+    <style>
+        /*  CURSOR */
+                /* The main center dot */
+        /* Update your existing cursor styles with these */
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: whitesmoke; /* Using your accent color directly */
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 10001; /* Higher than splash screen */
+            transform: translate(-50%, -50%);
+        }
+
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1.5px solid whitesmoke;
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+        }
+
+
+        body, .container, section, a {
+            cursor: none !important;
+        }
+
+        /* Hide custom cursor on mobile/touch devices where it feels laggy */
+        @media (hover: none) and (pointer: coarse) {
+            .cursor-dot, .cursor-outline {
+                display: none;
+            }
+            body, .container, section {
+                cursor: auto !important;
+            }
+        }
+    </style>
 </head>
 <body>
-
+    <div class="cursor-dot" data-cursor-dot></div>
+    <div class="cursor-outline" data-cursor-outline></div>
+    
     <!-- FIXED NAVBAR -->
+  
+
+
     <nav>
         <div style="display: flex; gap: 12px; align-items: center;">
             <img src="Logo_nav.png" alt="JOCA3" height="34px" style="filter: drop-shadow(0 0 4px rgba(0,153,255,0.3));">
@@ -354,14 +411,96 @@
     <div class="container" id="scrollContainer">
         <section id="slide1">
             <div class="bg-text">01</div>
-            <div class="content">
-                <h1>Impact</h1>
-                <p>Cinematic scroll experience — precision engineered, no slide gets skipped.</p>
+            <div class="content" id="slide1">
+                <style>
+                    #slide1{
+                        display: flex;
+                        gap: 100px;
+                        width: 100%;
+                        padding: 120px;
+                    }
+
+                    #slide1 #left-content{
+                        flex-grow: 1;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 50px;
+
+                    }
+
+                    #slide1 #right-content{
+                        width: 50%;
+                    }
+
+                    #slide1 #right-content img{
+                        border-radius: 50%;
+                        height: 420px;
+                        box-shadow: 0 0 0 8px var(--accent);
+
+                    }
+
+                    #slide1 h1, #slide1 h2, #slide1 p {
+                        text-align: left;
+                    }
+
+                    #slide1 h1 .line1{
+                        font-size: 4rem;
+                        font-family:  "Kaushan Script", cursive;
+                        font-weight: 100;
+                        ;
+                    }
+
+                    .two-line-title{
+                        text-align: left;
+                    }
+
+                    .two-line-title span{
+                    }
+
+                    .icon-btn  {
+                        color: white;
+                        font-size: 35px;
+                    }
+
+                    .icon-btn:hover {
+                        color: var(--accent);
+                        transition: all .5s ease;
+                    }
+
+                    #slide1-btn-wrapper{
+                        display: flex;
+                        gap: 30px;
+                    }
+                </style>
+                <div id="left-content">
+                    <h1 class="two-line-title"><span class="line1">Hola, bienvenid<span style="font-weight: bold; color: var(--accent); font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    ;">@</span> a mi</span><span class="line2">PORTAFOLIO</span></h1>
+                    <h2>Diseñador Gráfico | Desarrollador Front-end</h2>
+                    <p>Diseñando experiencias digitales responsivas, intuitivas y visualmente impactantes, donde cada detalle está pensado con precisión y propósito.</p>
+                    <div id="slide1-btn-wrapper">
+                        <a href="" class="btn" style="font-size: larger;">Descargar CV <i class="fa-solid fa-download" aria-hidden="true"></i></a>
+                        <a href="" class="icon-btn"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
+                        <a href="" class="icon-btn"><i class="fab fa-brands fa-linkedin" aria-hidden="true"></i></a>
+                        <a href="" class="icon-btn"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>
+                    </div>
+                </div>
+                <div id="right-content">
+                    <img src="./FotoMe1.jpg" alt="">
+                </div>
             </div>
         </section>
         
+        <style>
+            #slide2 img{
+                position: absolute;
+                right: 0;
+                top: 1px;
+                height: 1190px;
+            }
+        </style>
         <section id="slide2">
             <div class="bg-text">02</div>
+            <img src="/Imagenes/HelloAnim/0006.png" id="animImage" alt="">
             <div class="content">
                 <h1>Sobre Mi</h1>
                 <p>Diseño inmersivo, transiciones 3D y narrativa visual única.</p>
@@ -369,6 +508,10 @@
         </section>
 
         <style>
+            #slide3 p {
+                max-width: 600px;
+            }
+
             #slide3 .content {
                 display: flex;
                 flex-direction: column;
@@ -376,43 +519,45 @@
                 justify-content: space-between;
                 height: 100%;
             }
-            iframe{
+            #slide3 iframe{
                 width: 100%;
                 height: 40vh;
             }
 
             @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
             /* desktop only */
-                 iframe:hover{
+                #slide3 iframe:hover{
                 height: 56vh;
                 transition: all .4s;
                 }
 
-            iframe:hover ~ .character img {
+            #slide3 iframe:hover ~ .character img {
                 transform: translateY(-16vh) scale(1.05);
                 transition: all .5s;
                 }
             }
            
-            .content-header{
+            #slide3 .content-header{
                 width: 70%;
                 margin: auto;
                 display: flex;
                 gap: 5%;
             }
-            .content-header p{
+            #slide3 .content-header p{
                 margin: auto;
                 text-align: left;
                 padding-left: 55px;
                 border-left: 8px solid white;
             }
             h1.two-line-title{
-                text-align: right;
                 width: 557px;
-                margin: auto;
                 line-height: .8em;
             }
-            h1.two-line-title span{
+            #slide3 h1.two-line-title {
+                text-align: right;
+            }
+
+            h1.two-line-title .line2{
                 display: block;
                 color: var(--accent);
             }
@@ -461,12 +606,12 @@
             <div class="bg-text">03</div>
             <div class="content">
                 <div class="content-header">
-                    <h1 class="two-line-title">Redes <span>Sociales</span></h1>
+                    <h1 class="two-line-title"><span class="line1">REDES</span><span class="line2">SOCIALES</span></h1>
                     <p>Contenido estratégico y visual para <strong>redes sociales</strong>, enfocado en impacto, retención y posicionamiento de la marca. Desarrollando <strong>reels, posts y carruseles</strong> para <strong>Instagram, Facebook, TikTok y YouTube</strong>, cuidando tanto la estética como la intención comunicativa</p>
                 </div>
                 
                 <div>
-                    <iframe src="https://joca3design.com/igcards.html" frameborder="0"></iframe>
+                    <iframe src="/igcards.html" frameborder="0"></iframe>
                     <div class="character">
                         <img src="/Imagenes/scrollingMuñeco.png" alt="" >
                     </div>
@@ -491,7 +636,6 @@
             border-radius: 20px;
             overflow: hidden;
             transition: all .5s cubic-bezier(0.25, 1, 0.5, 1);
-            cursor: pointer;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -983,13 +1127,123 @@
             transform: translateZ(0);
             backface-visibility: hidden;
         }
-        /* optional: subtle pointer for dots */
-        .dot-wrapper {
-            cursor: pointer;
-        }
         body {
             overscroll-behavior: none;
         }
     </style>
+
+    <script>
+        (function() {
+            // --- CONFIGURATION ---
+            const FRAME_SPEED = 40;     // <-- ADJUST THIS SINGLE VALUE (Lower = Faster, e.g., 20)
+            const START_FRAME = 6;
+            const END_FRAME = 31;
+            const IMAGE_PATH = "/Imagenes/HelloAnim/";
+            // ---------------------
+
+            const imgElement = document.getElementById('animImage');
+            const slide2 = document.getElementById('slide2');
+            let currentFrame = START_FRAME;
+            let animInterval = null;
+
+            // Helper to format numbers to 0000 style (e.g., 6 -> 0006)
+            const formatFrame = (num) => num.toString().padStart(4, '0');
+
+            function updateImage() {
+                const isForward = slide2.classList.contains('active');
+                
+                if (isForward && currentFrame < END_FRAME) {
+                    currentFrame++;
+                } else if (!isForward && currentFrame > START_FRAME) {
+                    currentFrame--;
+                } else {
+                    // Stop the interval if we reached either end
+                    clearInterval(animInterval);
+                    animInterval = null;
+                    return;
+                }
+
+                imgElement.src = `${IMAGE_PATH}${formatFrame(currentFrame)}.png`;
+            }
+
+            // Monitor when Slide 2 gains/loses the 'active' class
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === "class") {
+                        // Start the loop if it's not already running
+                        if (!animInterval) {
+                            animInterval = setInterval(updateImage, FRAME_SPEED);
+                        }
+                    }
+                });
+            });
+
+            observer.observe(slide2, { attributes: true });
+
+            // Preload images to prevent flickering
+            for (let i = START_FRAME; i <= END_FRAME; i++) {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'image';
+                link.href = `${IMAGE_PATH}${formatFrame(i)}.png`;
+                document.head.appendChild(link);
+            }
+        })();
+    </script>
+
+        <script>
+const dot = document.querySelector("[data-cursor-dot]");
+const outline = document.querySelector("[data-cursor-outline]");
+const iframe = document.querySelector('iframe'); // Select your iframe
+
+let mouseX = 0;
+let mouseY = 0;
+let outlineX = 0;
+let outlineY = 0;
+const speed = 0.2;
+
+// Function to handle the actual movement
+function updatePosition(e, isInsideIframe = false) {
+    if (isInsideIframe) {
+        // When inside an iframe, we must add the iframe's 
+        // position relative to the viewport to the mouse coordinates
+        const rect = iframe.getBoundingClientRect();
+        mouseX = e.clientX + rect.left;
+        mouseY = e.clientY + rect.top;
+    } else {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    }
+
+    dot.style.left = `${mouseX}px`;
+    dot.style.top = `${mouseY}px`;
+}
+
+// 1. Listen to the main window
+window.addEventListener("mousemove", (e) => updatePosition(e, false));
+
+// 2. Listen to the iframe (Bridge logic)
+// Note: This only works if the iframe is on the same domain
+iframe.addEventListener('load', () => {
+    iframe.contentWindow.addEventListener("mousemove", (e) => {
+        updatePosition(e, true);
+    });
+});
+
+function animate() {
+    let distX = mouseX - outlineX;
+    let distY = mouseY - outlineY;
+
+    outlineX = outlineX + (distX * speed);
+    outlineY = outlineY + (distY * speed);
+
+    outline.style.left = `${outlineX}px`;
+    outline.style.top = `${outlineY}px`;
+
+    requestAnimationFrame(animate);
+}
+
+animate();    
+</script>
 </body>
 </html>

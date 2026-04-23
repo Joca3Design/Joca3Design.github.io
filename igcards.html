@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap" rel="stylesheet">
+    
+    <!--BASE-->
+
     <style>
         :root {
             --bg-color: #d8d8d8; /* Slightly darker to make shadows pop */
@@ -38,6 +41,8 @@
         }
 
         .carousel-track {
+            contain: paint; /* Massive performance boost for scrolling grids */
+            backface-visibility: hidden;
             display: grid;
             grid-template-columns: repeat(6, var(--card-width));
             gap: 40px;
@@ -48,6 +53,8 @@
             /* Infinite movement */
             animation: scrollDown 40s linear infinite; /* Slowed down to appreciate the effects */
             transition: animation-play-state 0.3s;
+            contain: paint; /* Layout optimization */
+
         }
 
         .carousel-track:hover {
@@ -64,7 +71,6 @@
             background: var(--card-bg);
             border-radius: 12px;
             padding: 15px;
-            cursor: pointer;
             backface-visibility: hidden;
 
             /* EFFECT 1: Deeper Static Drop Shadow for the Card */
@@ -100,6 +106,7 @@
             /* Add base separation and transition for interaction */
             transform: translateZ(10px);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+            background-size: cover;
         }
 
         .post-footer {
@@ -145,42 +152,222 @@
                 justify-content: center;
             }
         }
+
+        /* Add this to the CSS of your iframe page */
+        html, body {
+            cursor: none !important;
+        }
+
+        .post-card, .image-placeholder {
+            /* Tells the browser to prepare the GPU for these changes */
+            will-change: transform, opacity, filter; 
+            /* Force hardware acceleration */
+            transform: translateZ(0); 
+        }
     </style>
+
+
+    <!--OPTIMIZED-->
+    <!--
+    <style>
+        :root {
+    --bg-color: #d8d8d8;
+    --card-bg: #ffffff;
+    --insta-blue: #8faed1;
+    --card-width: 280px;
+}
+
+body {
+    background-color: var(--bg-color);
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: sans-serif;
+}
+
+.scene {
+    perspective: 2000px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    transform: scale(1.1); /* Optimized from zoom */
+}
+
+.carousel-track {
+    display: grid;
+    grid-template-columns: repeat(6, var(--card-width));
+    gap: 40px;
+    transform: rotateX(35deg) rotateZ(-15deg) translateY(-20%);
+    animation: scrollDown 40s linear infinite;
+    transition: animation-play-state 0.3s;
+    contain: paint; /* Layout optimization */
+}
+
+.carousel-track:hover {
+    animation-play-state: paused;
+}
+
+@keyframes scrollDown {
+    0% { transform: rotateX(35deg) rotateZ(-15deg) translateY(-40%); }
+    100% { transform: rotateX(35deg) rotateZ(-15deg) translateY(0%); }
+}
+
+.post-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+    position: relative;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.18);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease, filter 0.4s ease;
+    will-change: transform, opacity, filter;
+}
+
+/* Optimized Shadow for Hover */
+.post-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    box-shadow: 0 50px 100px rgba(0,0,0,0.35);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.post-header {
+    font-weight: 600;
+    font-family: 'Kaushan script';
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #333;
+    transform: translateZ(5px);
+}
+
+.image-placeholder {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background-color: var(--insta-blue);
+    border-radius: 4px;
+    margin-bottom: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    transform: translateZ(10px);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    will-change: transform;
+    
+    /* New styles to handle images */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1rem;
+    transform: translateZ(5px);
+}
+
+.carousel-track:hover .post-card {
+    filter: blur(8px);
+    opacity: 0.3;
+    transform: scale(0.9);
+}
+
+.carousel-track .post-card:hover {
+    filter: blur(0);
+    opacity: 1;
+    z-index: 1000;
+    transform: scale(1.2) translateZ(180px);
+}
+
+.carousel-track .post-card:hover::after {
+    opacity: 1;
+}
+
+.carousel-track .post-card:hover .image-placeholder {
+    transform: translateZ(38px) translateX(11px) translateY(-32px) scale(1.02);
+    filter: drop-shadow(-15px 28px 7px #0004);
+}
+
+@media (max-width: 768px) {
+    .scene { transform: scale(0.6); }
+}
+    </style>
+-->
+
 </head>
 <body>
 
     <div class="scene">
         <div class="carousel-track" id="track">
-            </div>
+            <div id="image-grid" class="adaptive-grid"></div>
+        </div>
     </div>
 
     <script>
         const track = document.getElementById('track');
-        
-        // Function to create a single card
-        function createCard() {
-            return `
-                <div class="post-card">
-                    <div class="post-header">Instagram</div>
-                    <div class="image-placeholder"></div>
-                    <div class="post-footer">
-                        <span><i class="fa fa-heart" aria-hidden="true" style="color: red;"></i> <i class="fa fa-comment-o" aria-hidden="true"></i>
-                         <i class="fa fa-paper-plane-o" aria-hidden="true"></i> </span>
-                        <span><i class="fa fa-bookmark-o" aria-hidden="true"></i> </span>
-                    </div>
-                </div>
-            `;
-        }
 
-        // Generate enough cards for smooth infinite loop in 6 columns
-        let cardHTML = '';
-        // 6 columns * 8 rows = 48 cards minimum per set
-        for (let i = 0; i < 60; i++) {
-            cardHTML += createCard();
-        }
+// 1. ADD YOUR IMAGE URLS HERE
+const myImages = [
+    '/Imagenes/Diseño/Redes Sociales/1.jpg',
+    '/Imagenes/Diseño/Redes Sociales/2.jpg',
+    '/Imagenes/Diseño/Redes Sociales/3.jpg',
+    '/Imagenes/Diseño/Redes Sociales/4.png',
+    '/Imagenes/Diseño/Redes Sociales/5.gif',
+    '/Imagenes/Diseño/Redes Sociales/6.png',
+    '/Imagenes/Diseño/Redes Sociales/7.png',
+    '/Imagenes/Diseño/Redes Sociales/8.gif'
 
-        // Fill the track and double it for the infinite loop illusion
-        track.innerHTML = cardHTML + cardHTML;
+
+    // Add as many as you want. 
+    // If you add 2, they repeat. If you add 10, they repeat less.
+];
+
+// 2. Function to create a single card with a specific image
+function createCard(imgUrl) {
+    return `
+        <div class="post-card">
+            <div class="post-header">Instagram</div>
+            <div class="image-placeholder" style="background-image: url('${imgUrl}')"></div>
+            <div class="post-footer">
+                <span>
+                    <i class="fa fa-heart" aria-hidden="true" style="color: red;"></i> 
+                    <i class="fa fa-comment-o" aria-hidden="true"></i>
+                    <i class="fa fa-paper-plane-o" aria-hidden="true"></i>
+                </span>
+                <span><i class="fa fa-bookmark-o" aria-hidden="true"></i></span>
+            </div>
+        </div>
+    `;
+}
+
+// 3. Logic to distribute images evenly and randomly
+let totalSlots = 60;
+let finalImagePool = [];
+
+for (let i = 0; i < totalSlots; i++) {
+    // This uses the modulo operator (%) to loop through your image array 
+    // ensuring an even count across the 60 slots.
+    finalImagePool.push(myImages[i % myImages.length]);
+}
+
+// 4. Shuffle the pool so they appear randomly across the grid
+finalImagePool.sort(() => Math.random() - 0.5);
+
+// 5. Generate the HTML
+let cardHTML = '';
+finalImagePool.forEach(img => {
+    cardHTML += createCard(img);
+});
+
+// Fill the track and double it for the infinite loop illusion
+track.innerHTML = cardHTML + cardHTML;
     </script>
 </body>
 </html>
