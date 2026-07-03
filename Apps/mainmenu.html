@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Animated Portfolio</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #030303;
+            color: #ffffff;
+        }
+
+        /* ====================== */
+        /* HEADER                 */
+        /* ====================== */
+        header {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #000000;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        header h2 {
+            font-size: clamp(0.95rem, 3vw, 1.2rem);
+            letter-spacing: 0.05em;
+        }
+
+        /* ====================== */
+        /* FOOTER                 */
+        /* ====================== */
+        footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background-color: #000000;
+            z-index: 10;
+            flex-shrink: 0;
+            padding: 16px 20px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .socials {
+            display: flex;
+            gap: 16px;
+        }
+
+        .socials a {
+            color: #555;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .socials a:hover {
+            color: #0088ff;
+        }
+
+        /* ====================== */
+        /* MAIN / ACCORDION       */
+        /* ====================== */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            /* On desktop, stretch to fill viewport between header and footer */
+            min-height: calc(100vh - 60px - 56px);
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        /* --- ACCORDION BASE --- */
+        .opcion {
+            flex: 1;
+            background-color: #080808;
+            border-bottom: 1px solid #1a1a1a;
+            padding: 0 clamp(20px, 5vw, 50px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            transition: flex 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                        background-color 0.4s ease,
+                        box-shadow 0.6s ease;
+            /* Minimum height so items are always tappable */
+            min-height: 60px;
+        }
+
+        /* Dark overlay on inactive */
+        .opcion::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 1;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        .opcion h1 {
+            font-size: clamp(1.4rem, 5vw, 3rem);
+            text-transform: uppercase;
+            margin-bottom: 0;
+            color: #555;
+            transform-origin: left center;
+            transition: margin 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                        color 0.4s ease,
+                        transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 2;
+            /* Prevent text overflow on narrow screens */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Mobile: show a subtle caret to hint tappability */
+        .opcion-caret {
+            position: absolute;
+            right: clamp(16px, 4vw, 40px);
+            top: 50%;
+            transform: translateY(-50%) rotate(0deg);
+            width: 20px;
+            height: 20px;
+            display: none; /* hidden on desktop */
+            opacity: 0.3;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .opcion-caret svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- CONTENT WRAPPER --- */
+        .content-wrapper {
+            max-height: 0;
+            position: relative;
+            z-index: 2;
+            transition: max-height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        /* Staggered reveal elements */
+        .description-text, .app-grid {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .description-text {
+            color: #a0a0a0;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            max-width: 650px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+            padding-top: 10px;
+        }
+
+        /* --- BUTTONS --- */
+        .app-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-bottom: 4px;
+        }
+
+        .app-btn {
+            background-color: rgba(0, 136, 255, 0.03);
+            border: 1px solid rgba(0, 136, 255, 0.3);
+            border-radius: 6px;
+            color: white;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(0.85rem, 2vw, 1.05rem);
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            /* Allow buttons to shrink but not force overflow */
+            white-space: nowrap;
+        }
+
+        .app-btn svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .app-btn:hover {
+            border-color: #0088ff;
+            background-color: rgba(0, 136, 255, 0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px -10px rgba(0, 136, 255, 0.5);
+        }
+
+        .app-btn:hover svg {
+            transform: scale(1.1) translateX(2px);
+        }
+
+        /* Touch-friendly active state for mobile */
+        .app-btn:active {
+            transform: translateY(-2px);
+            background-color: rgba(0, 136, 255, 0.15);
+        }
+
+        .text-blue { color: #0088ff; }
+
+
+        /* ================================================ */
+        /* DESKTOP HOVER ACCORDION (pointer: fine devices)  */
+        /* ================================================ */
+        @media (hover: hover) and (pointer: fine) {
+
+            /* Active: default first OR hovered */
+            .opcion:nth-child(1),
+            main:hover .opcion:hover {
+                flex: 2;
+                background-color: #0c1218;
+                box-shadow: inset 0 -2px 30px rgba(0, 136, 255, 0.05);
+            }
+
+            .opcion:nth-child(1)::before,
+            main:hover .opcion:hover::before {
+                opacity: 0;
+            }
+
+            .opcion:nth-child(1) h1,
+            main:hover .opcion:hover h1 {
+                color: #ffffff;
+                transform: scale(1.05);
+            }
+
+            .opcion:nth-child(1) .content-wrapper,
+            main:hover .opcion:hover .content-wrapper {
+                max-height: 400px;
+            }
+
+            .opcion:nth-child(1) .description-text,
+            main:hover .opcion:hover .description-text {
+                opacity: 1;
+                transform: translateY(0);
+                transition-delay: 0.15s;
+            }
+
+            .opcion:nth-child(1) .app-grid,
+            main:hover .opcion:hover .app-grid {
+                opacity: 1;
+                transform: translateY(0);
+                transition-delay: 0.25s;
+            }
+
+            /* Reset state when container is hovered */
+            main:hover .opcion {
+                flex: 1;
+                background-color: #080808;
+                box-shadow: none;
+            }
+            main:hover .opcion::before { opacity: 1; }
+
+            main:hover .opcion h1 {
+                margin-bottom: 0;
+                color: #555;
+                transform: scale(1);
+            }
+
+            main:hover .opcion .content-wrapper { max-height: 0; }
+
+            main:hover .opcion .description-text,
+            main:hover .opcion .app-grid {
+                opacity: 0;
+                transform: translateY(20px);
+                transition-delay: 0s;
+                transition: opacity 0.2s ease, transform 0.2s ease;
+            }
+        }
+
+
+        /* ================================================ */
+        /* TOUCH / MOBILE ACCORDION (tap to open)           */
+        /* ================================================ */
+        @media (hover: none), (pointer: coarse) {
+
+            /* Show the caret indicator */
+            .opcion-caret {
+                display: block;
+            }
+
+            /* All sections are closed by default */
+            .opcion {
+                flex: none;
+                min-height: 64px;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+
+            /* h1 is always visible as a tap target */
+            .opcion h1 {
+                padding: 20px 0;
+                color: #555;
+                transform: none !important;
+                font-size: clamp(1.3rem, 6vw, 2.2rem);
+            }
+
+            /* Active section (JS adds this class) */
+            .opcion.is-active {
+                background-color: #0c1218;
+                box-shadow: inset 0 -2px 30px rgba(0, 136, 255, 0.05);
+            }
+
+            .opcion.is-active::before {
+                opacity: 0;
+            }
+
+            .opcion.is-active h1 {
+                color: #ffffff;
+            }
+
+            .opcion.is-active .content-wrapper {
+                max-height: 500px;
+            }
+
+            .opcion.is-active .description-text {
+                opacity: 1;
+                transform: translateY(0);
+                transition-delay: 0.15s;
+            }
+
+            .opcion.is-active .app-grid {
+                opacity: 1;
+                transform: translateY(0);
+                transition-delay: 0.25s;
+            }
+
+            /* Caret rotation when active */
+            .opcion.is-active .opcion-caret {
+                transform: translateY(-50%) rotate(180deg);
+                opacity: 0.7;
+            }
+        }
+
+
+        /* ================================================ */
+        /* SMALL SCREENS (≤ 480px)                          */
+        /* ================================================ */
+        @media (max-width: 480px) {
+            .app-btn {
+                padding: 9px 14px;
+                gap: 8px;
+            }
+
+            .app-grid {
+                gap: 10px;
+            }
+
+            /* Stack buttons that would overflow */
+            .app-btn {
+                flex: 1 1 auto;
+                min-width: 0;
+                justify-content: center;
+            }
+        }
+
+
+        /* ================================================ */
+        /* REDUCED MOTION                                   */
+        /* ================================================ */
+        @media (prefers-reduced-motion: reduce) {
+            .opcion,
+            .opcion h1,
+            .content-wrapper,
+            .description-text,
+            .app-grid,
+            .app-btn,
+            .app-btn svg,
+            .opcion-caret {
+                transition: none !important;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h2><img src="https://Joca3Design.com/favicon.png" alt="" srcset="" height="20px">JOCA3<span class="text-blue">DESIGN</span></h2>
+    </header>
+
+    <main>
+        <div class="opcion">
+            <div class="opcion-caret">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+            <h1>My 3D Models</h1>
+            <div class="content-wrapper">
+                <p class="description-text">
+                    A collection of high-poly and low-poly assets created in Blender for games and architectural visualization.
+                </p>
+                <div class="app-grid">
+                    <a class="app-btn" href="https://google.com" target="_blank">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="8 6 2 12 8 18" stroke="white"></polyline>
+                            <line x1="14" y1="2" x2="10" y2="22" stroke="#0088ff"></line>
+                            <polyline points="16 18 22 12 16 6" stroke="white"></polyline>
+                        </svg>
+                        <span>CG<span class="text-blue">Trader</span></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="opcion">
+            <div class="opcion-caret">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+            <h1>Apps</h1>
+            <div class="content-wrapper">
+                <p class="description-text">
+                    A free, lightning-fast suite of client-side web tools for digital creators—no ads, no accounts, just instant results.
+                </p>
+                <div class="app-grid">
+
+                    <a class="app-btn" href="https://google.com" target="_blank">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="8 6 2 12 8 18" stroke="white"></polyline>
+                            <line x1="14" y1="2" x2="10" y2="22" stroke="#0088ff"></line>
+                            <polyline points="16 18 22 12 16 6" stroke="white"></polyline>
+                        </svg>
+                        <span>code / <span class="text-blue">Diff</span></span>
+                    </a>
+
+                    <button class="app-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12h6l-3-3m3 3l-3 3" stroke="white"></path>
+                            <path d="M20 12h-6l3-3m-3 3l3 3" stroke="#0088ff"></path>
+                        </svg>
+                        <span><span class="text-blue">Squeeze</span> Light</span>
+                    </button>
+
+                    <button class="app-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linejoin="round">
+                            <path d="M5 4v16" stroke="white" stroke-linecap="round"></path>
+                            <polygon points="10,4 20,12 10,20" fill="#0088ff" stroke="#0088ff"></polygon>
+                        </svg>
+                        <span>Sequence <span class="text-blue">Spin</span></span>
+                    </button>
+
+                    <button class="app-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linejoin="round">
+                            <rect x="5" y="4" width="5" height="16" rx="1" stroke="white"></rect>
+                            <rect x="14" y="4" width="5" height="16" rx="1" stroke="#0088ff"></rect>
+                        </svg>
+                        <span>Quick <span class="text-blue">Collage</span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="opcion">
+            <div class="opcion-caret">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+            <h1>Portfolio</h1>
+            <div class="content-wrapper">
+                <p class="description-text">
+                    Explore my recent web development projects, UI/UX designs, and open-source contributions.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <style>
+            footer{
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        </style>
+        <div class="socials">
+            <a href="https://instagram.com" target="_blank">Instagram</a>
+        </div>
+        <p>© 2026 Joca3Design. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        // Touch accordion: tap to open/close sections on touch/pointer-coarse devices
+        (function () {
+            const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+            if (!isTouch) return;
+
+            const sections = document.querySelectorAll('.opcion');
+
+            sections.forEach(function (section) {
+                section.addEventListener('click', function () {
+                    const isAlreadyOpen = section.classList.contains('is-active');
+                    // Close all
+                    sections.forEach(function (s) { s.classList.remove('is-active'); });
+                    // Open clicked one (unless it was already open — toggle behaviour)
+                    if (!isAlreadyOpen) {
+                        section.classList.add('is-active');
+                    }
+                });
+            });
+
+            // Open the first section by default on touch too
+            if (sections.length > 0) {
+                sections[0].classList.add('is-active');
+            }
+        })();
+    </script>
+</body>
+</html>

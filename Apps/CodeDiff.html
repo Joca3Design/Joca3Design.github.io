@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<link rel="shortcut icon" href="CDFavicon.png" type="image/x-icon">
+
+<!-- Primary SEO -->
+<title>CodeDiff | Secure Side-by-Side Text & Code Comparison</title>
+<meta name="description" content="Compare two text or code files side-by-side in your browser. A secure, client-side Beyond Compare alternative with zero tracking, no ads, and no server uploads.">
+<meta name="keywords" content="code diff tool, compare text files online, diff checker, side by side text comparison, file merger browser, secure diff tool, beyond compare online">
+<meta name="author" content="Joca3Design">
+
+<!-- Open Graph / Facebook / Discord -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="CodeDiff | Secure Side-by-Side Text & Code Comparison">
+<meta property="og:description" content="A private, client-side diff checker for text and code. No data ever leaves your computer. Free, fast, and ad-free.">
+<meta property="og:image" content="https://yourdomain.com/assets/codediff-preview.png">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CodeDiff | Secure Side-by-Side Text & Code Comparison">
+<meta name="twitter:description" content="A private, client-side diff checker for text and code. No data ever leaves your computer. Free, fast, and ad-free.">
+<meta name="twitter:image" content="https://yourdomain.com/assets/codediff-preview.png">
+
+<style>
+  /* Page-specific styles for Code/Diff.
+     Shared chrome (topbar, buttons, selects, pills, toast,
+     drop-overlay, tokens) now lives in theme.css. */
+
+  body{ overflow:hidden; }
+
+  /* ---------- Main compare area ---------- */
+  #main{
+    flex:1;
+    display:flex;
+    min-height:0;
+    position:relative;
+  }
+  .pane{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    background:var(--bg-0);
+    position:relative;
+  }
+  .pane.right{border-left:1px solid var(--line);}
+
+  .pane-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    background:var(--bg-1);
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .pane-header .filename{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--text-0);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    flex-shrink:1;
+  }
+  .pane-header .filename.dirty::after{
+    content:" *";
+    color:var(--mod-text);
+    font-weight:700;
+  }
+  .pane-header .filename.placeholder{color:var(--text-2);font-style:italic;}
+  .lang-badge{
+    font-family:var(--mono);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--text-2);
+    background:var(--bg-3);
+    border:1px solid var(--line);
+    padding:2px 6px;
+    border-radius:4px;
+    flex-shrink:0;
+  }
+  .pane-header .ph-spacer{flex:1;}
+
+  .pane-dropzone{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    color:var(--text-2);
+    cursor:pointer;
+    border:1px dashed var(--line);
+    margin:10px;
+    border-radius:10px;
+    transition:background .15s, border-color .15s;
+    gap:10px;
+    padding:30px;
+  }
+  .pane-dropzone:hover{background:var(--bg-1);border-color:#2c3444;}
+  .pane-dropzone svg{width:30px;height:30px;opacity:.6;}
+  .pane-dropzone .dz-title{font-size:13.5px;color:var(--text-1);font-weight:500;}
+  .pane-dropzone .dz-sub{font-size:12px;color:var(--text-2);}
+  .pane-dropzone kbd{
+    font-family:var(--mono);
+    background:var(--bg-3);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:1px 6px;
+    font-size:11px;
+    color:var(--text-1);
+  }
+
+  .editor-scroll{
+    flex:1;
+    overflow:auto;
+    position:relative;
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:20px;
+  }
+  .editor-scroll::-webkit-scrollbar{width:11px;height:11px;}
+  .editor-scroll::-webkit-scrollbar-track{background:var(--bg-0);}
+  .editor-scroll::-webkit-scrollbar-thumb{background:#2a3140;border-radius:6px;border:2px solid var(--bg-0);}
+  .editor-scroll::-webkit-scrollbar-thumb:hover{background:#384055;}
+
+  .code-table{
+    width:100%;
+    border-collapse:collapse;
+  }
+  .code-table tr{vertical-align:top;}
+  .code-table .ln{
+    width:46px;
+    min-width:46px;
+    text-align:right;
+    padding:0 8px;
+    color:var(--text-2);
+    user-select:none;
+    background:var(--bg-1);
+    border-right:1px solid var(--line-soft);
+    position:sticky;
+    left:0;
+    font-size:11.5px;
+    line-height:20px;
+  }
+  .code-table .gutter-icon{
+    width:18px;min-width:18px;
+    text-align:center;
+    user-select:none;
+    line-height:20px;
+    font-size:11px;
+    border-right:1px solid var(--line-soft);
+    cursor:default;
+  }
+  .code-table .gutter-icon.actionable{
+    cursor:pointer;
+    transition:filter .1s;
+  }
+  .code-table .gutter-icon.actionable:hover{
+    filter:brightness(1.6);
+  }
+  .code-table .code-cell{
+    padding:0 10px;
+    white-space:pre;
+    color:var(--text-0);
+    position:relative;
+  }
+  .code-table .code-cell.editable{outline:none;}
+  .code-table .code-cell .content{white-space:pre;}
+
+  .row-add{background:var(--add-bg);}
+  .row-add .ln{background:#0f2a1d;color:#4f9e74;}
+  .row-add .gutter-icon{background:#0f2a1d;color:var(--add-text);}
+  .row-del{background:var(--del-bg);}
+  .row-del .ln{background:#33161a;color:#b56f78;}
+  .row-del .gutter-icon{background:#33161a;color:var(--del-text);}
+  .row-mod{background:var(--mod-bg);}
+  .row-mod .ln{background:#2c2410;color:#b6904a;}
+  .row-mod .gutter-icon{background:#2c2410;color:var(--mod-text);}
+  .row-empty .ln, .row-empty .gutter-icon{background:var(--bg-1);}
+  .row-empty .code-cell{background:repeating-linear-gradient(135deg, var(--bg-1) 0px, var(--bg-1) 6px, #161b24 6px, #161b24 12px);}
+
+  .row-current-diff{box-shadow:inset 0 0 0 1px var(--accent);}
+
+  .ins-inline{background:var(--add-bg-strong);color:var(--add-text);border-radius:2px;}
+  .del-inline{background:var(--del-bg-strong);color:var(--del-text);border-radius:2px;text-decoration:line-through;text-decoration-color:#c4505f88;}
+
+  /* center spine with connector lines between panes */
+  #spine{
+    width:34px;
+    flex-shrink:0;
+    background:var(--bg-1);
+    border-left:1px solid var(--line);
+    border-right:1px solid var(--line);
+    position:relative;
+    overflow:hidden;
+  }
+  #spine svg{position:absolute;top:0;left:0;}
+
+  /* ---------- Empty state (no files loaded at all) ---------- */
+  #empty-state{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    z-index:5;
+    pointer-events:none;
+  }
+
+  /* ---------- Minimap-ish diff overview bar ---------- */
+  #overview{
+    width:14px;
+    flex-shrink:0;
+    background:var(--bg-1);
+    border-left:1px solid var(--line);
+    position:relative;
+    cursor:pointer;
+  }
+  #overview .ov-mark{
+    position:absolute;
+    left:2px;right:2px;
+    border-radius:2px;
+  }
+
+  /* merge arrow buttons inside gutter */
+  .merge-btn{
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    width:16px;height:16px;
+    cursor:pointer;
+    color:inherit;
+    opacity:.85;
+  }
+  .merge-btn:hover{opacity:1;}
+  .merge-btn svg{width:11px;height:11px;}
+
+  /* responsive: stack vertically on narrow screens (page-specific) */
+  @media (max-width: 860px){
+    #main{flex-direction:column;}
+    .pane.right{border-left:none;border-top:1px solid var(--line);}
+    #spine{display:none;}
+    #overview{display:none;}
+    #topbar{flex-wrap:wrap;row-gap:8px;}
+  }
+
+  @media (max-width: 560px){
+    #statusbar #status-msg{
+      order:3;
+      width:100%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .pane-header .filename{font-size:11.5px;}
+  }
+</style>
+
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <div class="brand">
+      <img src="CDLogo.png" alt="" srcset="" height="30px">
+    </div>
+
+    <div class="tb-divider"></div>
+
+    <div class="toolbar-group">
+      <button class="tb-btn" id="btn-open-left" title="Open file into left pane">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Open Left
+      </button>
+      <button class="tb-btn" id="btn-open-right" title="Open file into right pane">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Open Right
+      </button>
+      <input type="file" id="file-input-left" accept=".txt,.html,.htm,.js,.jsx,.ts,.tsx,.py,.css,.scss,.cshtml,.cs,.json,.xml,.md,.java,.cpp,.c,.h,.go,.rb,.php,.sql,.yaml,.yml,.sh,.bat,.vue,.svelte,*">
+      <input type="file" id="file-input-right" accept=".txt,.html,.htm,.js,.jsx,.ts,.tsx,.py,.css,.scss,.cshtml,.cs,.json,.xml,.md,.java,.cpp,.c,.h,.go,.rb,.php,.sql,.yaml,.yml,.sh,.bat,.vue,.svelte,*">
+    </div>
+
+    <div class="tb-divider"></div>
+
+    <div class="toolbar-group">
+      <button class="tb-btn" id="btn-swap" title="Swap left and right">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Swap
+      </button>
+      <select class="tb-select" id="select-mode" title="Diff granularity">
+        <option value="line">Line diff</option>
+        <option value="word">Word diff</option>
+        <option value="char">Char diff</option>
+      </select>
+      <label class="tb-btn" style="cursor:pointer; font-size: small;" title="Ignore whitespace differences">
+        <input type="checkbox" id="chk-ignore-ws" style="accent-color:var(--accent);">
+        Ignore whitespace
+      </label>
+    </div>
+
+    <div class="tb-divider hide-mobile"></div>
+
+    <div class="toolbar-group hide-mobile" id="stats-group">
+      <span class="stat-pill" id="stat-add"><span class="dot add"></span><span id="count-add">0</span><span class="long-label">&nbsp;added</span></span>
+      <span class="stat-pill" id="stat-del"><span class="dot del"></span><span id="count-del">0</span><span class="long-label">&nbsp;removed</span></span>
+      <span class="stat-pill" id="stat-mod"><span class="dot mod"></span><span id="count-mod">0</span><span class="long-label">&nbsp;modified</span></span>
+    </div>
+
+    <div class="tb-spacer"></div>
+
+    <div class="toolbar-group">
+      <button class="tb-btn" id="btn-download-left" title="Download left file" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span class="hide-mobile">Save Left</span>
+      </button>
+      <button class="tb-btn" id="btn-download-right" title="Download right file" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span class="hide-mobile">Save Right</span>
+      </button>
+      <button class="tb-btn primary" id="btn-reset" title="Clear both panes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        Clear
+      </button>
+    </div>
+  </div>
+
+  <div id="main">
+
+    <div class="pane left" id="pane-left">
+      <div class="pane-header">
+        <span class="filename placeholder" id="filename-left">No file — paste or drop here</span>
+        <span class="lang-badge" id="lang-left" style="display:none;"></span>
+        <div class="ph-spacer"></div>
+      </div>
+      <div class="pane-dropzone" id="dropzone-left">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <div class="dz-title">Drop a file, click to browse, or <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste</div>
+        <div class="dz-sub">.js .ts .py .html .css .cs .cshtml .json … any text file</div>
+      </div>
+    </div>
+
+    <div id="spine"><svg id="spine-svg" width="34" height="100%"></svg></div>
+
+    <div class="pane right" id="pane-right">
+      <div class="pane-header">
+        <span class="filename placeholder" id="filename-right">No file — paste or drop here</span>
+        <span class="lang-badge" id="lang-right" style="display:none;"></span>
+        <div class="ph-spacer"></div>
+      </div>
+      <div class="pane-dropzone" id="dropzone-right">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <div class="dz-title">Drop a file, click to browse, or <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste</div>
+        <div class="dz-sub">.js .ts .py .html .css .cs .cshtml .json … any text file</div>
+      </div>
+    </div>
+
+    <div id="overview" title="Diff overview — click to jump"></div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item">
+      <button class="sb-nav" id="btn-prev-diff" title="Previous difference (Alt+Up)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 15l-6-6-6 6"/></svg>
+      </button>
+      <span id="diff-position">0 / 0</span>
+      <button class="sb-nav" id="btn-next-diff" title="Next difference (Alt+Down)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+    <div class="sb-item" id="sync-indicator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      Scroll sync on
+    </div>
+    <div class="sb-spacer"></div>
+    <div class="sb-item" id="status-msg">Drop or paste two files to compare</div>
+  </div>
+
+</div>
+
+<div class="drop-overlay" id="global-drop-overlay">
+  <div class="drop-card">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+    <h3>Drop file to compare</h3>
+    <p>Release over the left or right pane</p>
+  </div>
+</div>
+
+<div id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+  <span id="toast-text"></span>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  left:  { name: '', lang: '', original: '', lines: [''], dirty: false, loaded: false },
+  right: { name: '', lang: '', original: '', lines: [''], dirty: false, loaded: false },
+  diffMode: 'line', // line | word | char
+  ignoreWs: false,
+  alignedRows: [],   // computed diff rows {type, lLine, rLine, lNum, rNum, inline}
+  diffBlocks: [],    // indices into alignedRows where a diff block starts (for nav)
+  currentDiffIdx: -1,
+  syncingScroll: false,
+};
+
+const els = {};
+['filename-left','filename-right','lang-left','lang-right',
+ 'dropzone-left','dropzone-right','pane-left','pane-right',
+ 'file-input-left','file-input-right','btn-open-left','btn-open-right',
+ 'btn-swap','select-mode','chk-ignore-ws','btn-download-left','btn-download-right',
+ 'btn-reset','count-add','count-del','count-mod','global-drop-overlay',
+ 'toast','toast-text','diff-position','btn-prev-diff','btn-next-diff',
+ 'status-msg','overview','spine-svg'
+].forEach(id => els[id] = document.getElementById(id));
+
+/* ============================================================
+   LANGUAGE DETECTION
+   ============================================================ */
+const EXT_LANG = {
+  js:'JavaScript', jsx:'JSX', ts:'TypeScript', tsx:'TSX',
+  py:'Python', html:'HTML', htm:'HTML', css:'CSS', scss:'SCSS',
+  cshtml:'CSHTML', cs:'C#', json:'JSON', xml:'XML', md:'Markdown',
+  java:'Java', cpp:'C++', c:'C', h:'C Header', go:'Go', rb:'Ruby',
+  php:'PHP', sql:'SQL', yaml:'YAML', yml:'YAML', sh:'Shell',
+  bat:'Batch', vue:'Vue', svelte:'Svelte', txt:'Text'
+};
+function detectLang(filename){
+  const ext = (filename.split('.').pop() || '').toLowerCase();
+  return EXT_LANG[ext] || (ext ? ext.toUpperCase() : 'Text');
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer = null;
+function showToast(msg){
+  els['toast-text'].textContent = msg;
+  els['toast'].classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> els['toast'].classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   FILE LOADING
+   ============================================================ */
+function loadFileToSide(side, name, text){
+  const s = state[side];
+  s.name = name;
+  s.lang = detectLang(name);
+  s.original = text;
+  s.lines = text.split(/\r\n|\r|\n/);
+  s.dirty = false;
+  s.loaded = true;
+  renderPaneHeader(side);
+  recomputeDiff();
+  updateDownloadButtons();
+  showToast(`Loaded "${name}" into ${side} pane`);
+}
+
+function readFile(file, side){
+  const reader = new FileReader();
+  reader.onload = (e) => loadFileToSide(side, file.name, e.target.result);
+  reader.onerror = () => showToast('Could not read that file');
+  reader.readAsText(file);
+}
+
+els['file-input-left'].addEventListener('change', e=>{
+  if(e.target.files[0]) readFile(e.target.files[0], 'left');
+  e.target.value = '';
+});
+els['file-input-right'].addEventListener('change', e=>{
+  if(e.target.files[0]) readFile(e.target.files[0], 'right');
+  e.target.value = '';
+});
+els['btn-open-left'].addEventListener('click', ()=> els['file-input-left'].click());
+els['btn-open-right'].addEventListener('click', ()=> els['file-input-right'].click());
+
+/* click on dropzone opens file browser too */
+els['dropzone-left'].addEventListener('click', ()=> els['file-input-left'].click());
+els['dropzone-right'].addEventListener('click', ()=> els['file-input-right'].click());
+
+/* ---------- Drag & drop ---------- */
+let dragCounter = 0;
+['dragenter','dragover'].forEach(evt=>{
+  window.addEventListener(evt, e=>{
+    e.preventDefault();
+    if(e.dataTransfer && Array.from(e.dataTransfer.types||[]).includes('Files')){
+      els['global-drop-overlay'].classList.add('active');
+    }
+  });
+});
+window.addEventListener('dragleave', e=>{
+  dragCounter--;
+  if(e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight){
+    els['global-drop-overlay'].classList.remove('active');
+  }
+});
+window.addEventListener('drop', e=>{
+  e.preventDefault();
+  els['global-drop-overlay'].classList.remove('active');
+});
+
+function setupPaneDrop(paneEl, side){
+  paneEl.addEventListener('dragover', e=>{ e.preventDefault(); paneEl.style.background = 'rgba(91,140,255,0.06)'; });
+  paneEl.addEventListener('dragleave', e=>{ paneEl.style.background = ''; });
+  paneEl.addEventListener('drop', e=>{
+    e.preventDefault();
+    paneEl.style.background = '';
+    els['global-drop-overlay'].classList.remove('active');
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(file) readFile(file, side);
+  });
+}
+setupPaneDrop(els['pane-left'], 'left');
+setupPaneDrop(els['pane-right'], 'right');
+
+/* ---------- Paste (Ctrl+V) ---------- */
+function setupPanePaste(paneEl, side){
+  paneEl.addEventListener('paste', e=>{
+    // If a file is in clipboard items, prefer that
+    const items = e.clipboardData && e.clipboardData.items;
+    if(items){
+      for(const item of items){
+        if(item.kind === 'file'){
+          const f = item.getAsFile();
+          if(f){ e.preventDefault(); readFile(f, side); return; }
+        }
+      }
+    }
+    const text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+    if(text !== undefined){
+      // only intercept full-pane paste when target isn't an editable code cell
+      const target = e.target;
+      if(!target.closest('.code-cell.editable')){
+        e.preventDefault();
+        const name = state[side].loaded ? state[side].name : `pasted-${side}.txt`;
+        loadFileToSide(side, name, text);
+      }
+    }
+  });
+}
+setupPanePaste(els['pane-left'], 'left');
+setupPanePaste(els['pane-right'], 'right');
+
+// Global paste fallback: if nothing loaded yet and focus isn't in an editable cell
+document.addEventListener('paste', e=>{
+  if(e.target.closest('.code-cell.editable')) return;
+  if(e.target.closest('.pane')) return; // handled above
+  const items = e.clipboardData && e.clipboardData.items;
+  let handled = false;
+  if(items){
+    for(const item of items){
+      if(item.kind === 'file'){
+        const f = item.getAsFile();
+        if(f){
+          const side = !state.left.loaded ? 'left' : 'right';
+          readFile(f, side);
+          handled = true;
+          break;
+        }
+      }
+    }
+  }
+  if(!handled){
+    const text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+    if(text){
+      const side = !state.left.loaded ? 'left' : (!state.right.loaded ? 'right' : 'left');
+      loadFileToSide(side, `pasted-${side}.txt`, text);
+    }
+  }
+});
+
+/* ============================================================
+   PANE HEADER RENDER
+   ============================================================ */
+function renderPaneHeader(side){
+  const s = state[side];
+  const fEl = els['filename-' + side];
+  const lEl = els['lang-' + side];
+  if(s.loaded){
+    fEl.textContent = s.name + (s.dirty ? '' : '');
+    fEl.classList.remove('placeholder');
+    fEl.classList.toggle('dirty', s.dirty);
+    lEl.textContent = s.lang;
+    lEl.style.display = 'inline-block';
+  } else {
+    fEl.textContent = 'No file — paste or drop here';
+    fEl.classList.add('placeholder');
+    fEl.classList.remove('dirty');
+    lEl.style.display = 'none';
+  }
+}
+
+function updateDownloadButtons(){
+  els['btn-download-left'].disabled = !state.left.loaded;
+  els['btn-download-right'].disabled = !state.right.loaded;
+}
+
+/* ============================================================
+   DIFF ENGINE
+   Line-level LCS diff (Myers-ish via DP, with fallback for big files)
+   plus inline word/char diff for modified line pairs.
+   ============================================================ */
+
+function normalizeForCompare(line){
+  if(state.ignoreWs){
+    return line.replace(/\s+/g,' ').trim();
+  }
+  return line;
+}
+
+// Generic LCS-based diff for arrays of tokens -> list of {type:'eq'|'add'|'del', value, aIndex, bIndex}
+function lcsDiff(a, b, keyFn){
+  keyFn = keyFn || (x=>x);
+  const n = a.length, m = b.length;
+  // Use Myers-like greedy algorithm for performance on large inputs via diff table
+  // For practicality with reasonable file sizes, do DP LCS with O(n*m) but guard with cap.
+  const MAX_CELLS = 4_000_000;
+  if(n*m > MAX_CELLS){
+    return fallbackDiffLargeFiles(a,b,keyFn);
+  }
+  const dp = new Array(n+1);
+  for(let i=0;i<=n;i++) dp[i] = new Uint32Array(m+1);
+  for(let i=n-1;i>=0;i--){
+    for(let j=m-1;j>=0;j--){
+      if(keyFn(a[i])===keyFn(b[j])) dp[i][j] = dp[i+1][j+1]+1;
+      else dp[i][j] = Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  const result = [];
+  let i=0,j=0;
+  while(i<n && j<m){
+    if(keyFn(a[i])===keyFn(b[j])){
+      result.push({type:'eq', value:a[i], aIndex:i, bIndex:j});
+      i++; j++;
+    } else if(dp[i+1][j] >= dp[i][j+1]){
+      result.push({type:'del', value:a[i], aIndex:i, bIndex:null});
+      i++;
+    } else {
+      result.push({type:'add', value:b[j], aIndex:null, bIndex:j});
+      j++;
+    }
+  }
+  while(i<n){ result.push({type:'del', value:a[i], aIndex:i, bIndex:null}); i++; }
+  while(j<m){ result.push({type:'add', value:b[j], aIndex:null, bIndex:j}); j++; }
+  return result;
+}
+
+// Simple O(n+m) fallback using a hash-map based LCS approximation (patience-diff-ish) for huge files
+function fallbackDiffLargeFiles(a,b,keyFn){
+  const bIndexMap = new Map();
+  b.forEach((val,idx)=>{
+    const k = keyFn(val);
+    if(!bIndexMap.has(k)) bIndexMap.set(k, []);
+    bIndexMap.get(k).push(idx);
+  });
+  const result = [];
+  let i=0, j=0;
+  const used = new Array(b.length).fill(false);
+  // Greedy forward matching
+  let bi=0;
+  while(i<a.length && j<b.length){
+    if(keyFn(a[i])===keyFn(b[j])){
+      result.push({type:'eq', value:a[i], aIndex:i, bIndex:j});
+      i++; j++;
+    } else {
+      // look ahead a little window to find a sync point
+      let foundJ=-1, foundI=-1;
+      const WINDOW=50;
+      outer:
+      for(let di=0; di<WINDOW && i+di<a.length; di++){
+        for(let dj=0; dj<WINDOW && j+dj<b.length; dj++){
+          if(keyFn(a[i+di])===keyFn(b[j+dj])){ foundI=di; foundJ=dj; break outer; }
+        }
+      }
+      if(foundI===-1){
+        result.push({type:'del', value:a[i], aIndex:i, bIndex:null});
+        i++;
+      } else {
+        for(let k=0;k<foundI;k++){ result.push({type:'del', value:a[i+k], aIndex:i+k, bIndex:null}); }
+        for(let k=0;k<foundJ;k++){ result.push({type:'add', value:b[j+k], aIndex:null, bIndex:j+k}); }
+        i+=foundI; j+=foundJ;
+      }
+    }
+  }
+  while(i<a.length){ result.push({type:'del', value:a[i], aIndex:i, bIndex:null}); i++; }
+  while(j<b.length){ result.push({type:'add', value:b[j], aIndex:null, bIndex:j}); j++; }
+  return result;
+}
+
+// Tokenize a line into words/punctuation for word-level diff
+function tokenizeWords(line){
+  return line.match(/\s+|[A-Za-z0-9_]+|[^\sA-Za-z0-9_]/g) || [];
+}
+function tokenizeChars(line){
+  return line.split('');
+}
+
+function inlineDiff(oldLine, newLine, mode){
+  const tok = mode === 'char' ? tokenizeChars : tokenizeWords;
+  const a = tok(oldLine), b = tok(newLine);
+  const d = lcsDiff(a, b, x=>x);
+  // Merge consecutive same-type tokens into spans
+  const oldSpans = [], newSpans = [];
+  let curOld = null, curNew = null;
+  for(const item of d){
+    if(item.type === 'eq'){
+      if(curOld){ oldSpans.push(curOld); curOld=null; }
+      if(curNew){ newSpans.push(curNew); curNew=null; }
+      oldSpans.push({type:'eq', text:item.value});
+      newSpans.push({type:'eq', text:item.value});
+    } else if(item.type === 'del'){
+      if(!curOld) curOld = {type:'del', text:''};
+      curOld.text += item.value;
+    } else {
+      if(!curNew) curNew = {type:'add', text:''};
+      curNew.text += item.value;
+    }
+  }
+  if(curOld) oldSpans.push(curOld);
+  if(curNew) newSpans.push(curNew);
+  return {oldSpans, newSpans};
+}
+
+/* ============================================================
+   MAIN DIFF COMPUTATION -> build aligned rows for both panes
+   ============================================================ */
+function recomputeDiff(){
+  // If either side isn't loaded yet, there's nothing to diff against — show plain
+  // content (no diff decoration) on whichever side is loaded, and the dropzone on the other.
+  if(!state.left.loaded || !state.right.loaded){
+    state.alignedRows = [];
+    state.diffBlocks = [];
+    state.currentDiffIdx = -1;
+    renderSingleSidePlain();
+    updateStats();
+    updateOverview();
+    updateDiffPosition();
+    return;
+  }
+
+  const aLines = state.left.lines;
+  const bLines = state.right.lines;
+
+  const keyFn = (line) => normalizeForCompare(line);
+  const rawDiff = lcsDiff(aLines, bLines, keyFn);
+
+  // Group consecutive del+add runs to detect "modified" pairs
+  const rows = [];
+  let idx = 0;
+  while(idx < rawDiff.length){
+    const item = rawDiff[idx];
+    if(item.type === 'eq'){
+      rows.push({type:'eq', lNum:item.aIndex+1, rNum:item.bIndex+1, lText:aLines[item.aIndex], rText:bLines[item.bIndex]});
+      idx++;
+      continue;
+    }
+    // collect run of del/add
+    let dels = [], adds = [];
+    while(idx<rawDiff.length && rawDiff[idx].type==='del'){ dels.push(rawDiff[idx]); idx++; }
+    while(idx<rawDiff.length && rawDiff[idx].type==='add'){ adds.push(rawDiff[idx]); idx++; }
+    const pairCount = Math.min(dels.length, adds.length);
+    for(let k=0;k<pairCount;k++){
+      const dItem = dels[k], aItem = adds[k];
+      const lText = aLines[dItem.aIndex];
+      const rText = bLines[aItem.bIndex];
+      const inline = inlineDiff(lText, rText, state.diffMode === 'line' ? 'word' : state.diffMode);
+      rows.push({type:'mod', lNum:dItem.aIndex+1, rNum:aItem.bIndex+1, lText, rText, inline});
+    }
+    for(let k=pairCount;k<dels.length;k++){
+      const dItem = dels[k];
+      rows.push({type:'del', lNum:dItem.aIndex+1, rNum:null, lText:aLines[dItem.aIndex], rText:null});
+    }
+    for(let k=pairCount;k<adds.length;k++){
+      const aItem = adds[k];
+      rows.push({type:'add', lNum:null, rNum:aItem.bIndex+1, lText:null, rText:bLines[aItem.bIndex]});
+    }
+  }
+
+  state.alignedRows = rows;
+
+  // compute diff block starts for navigation (consecutive non-eq rows = one block)
+  const blocks = [];
+  for(let i=0;i<rows.length;i++){
+    if(rows[i].type !== 'eq' && (i===0 || rows[i-1].type === 'eq')){
+      blocks.push(i);
+    }
+  }
+  state.diffBlocks = blocks;
+  state.currentDiffIdx = blocks.length ? 0 : -1;
+
+  renderRows();
+  updateStats();
+  updateOverview();
+  updateDiffPosition();
+}
+
+/* Render plain (non-diffed) content for whichever single side is loaded, and
+   make sure the other side shows only its dropzone with no stray editor table. */
+function renderSingleSidePlain(){
+  ['left','right'].forEach(side=>{
+    const s = state[side];
+    if(s.loaded){
+      ensureEditorScroll(side);
+      const html = '<table class="code-table"><tbody>' + s.lines.map((line, i)=>{
+        const safe = line === '' ? '&nbsp;' : escapeHtml(line);
+        return `<tr><td class="ln">${i+1}</td><td class="gutter-icon"></td>`+
+               `<td class="code-cell editable" contenteditable="true" data-row="${i}" data-side="${side}" data-plain="1" spellcheck="false"><span class="content">${safe}</span></td></tr>`;
+      }).join('') + '</tbody></table>';
+      document.getElementById('editor-' + side).innerHTML = html;
+      attachPlainCellHandlers(side);
+    } else {
+      document.getElementById('editor-' + side + '-scroll')?.remove();
+    }
+  });
+  showDropzones(!state.left.loaded, !state.right.loaded);
+  els['spine-svg'].innerHTML = '';
+}
+
+function attachPlainCellHandlers(side){
+  const editor = document.getElementById('editor-' + side);
+  if(!editor) return;
+  editor.querySelectorAll('.code-cell.editable').forEach(cell=>{
+    cell.addEventListener('blur', onPlainCellEdit);
+    cell.addEventListener('keydown', onCellKeydown);
+  });
+}
+
+function onPlainCellEdit(e){
+  const cell = e.target;
+  const rowIdx = parseInt(cell.dataset.row, 10);
+  const side = cell.dataset.side;
+  const newText = cell.textContent.replace(/\u00a0/g,'');
+  const s = state[side];
+  if(s.lines[rowIdx] === newText) return;
+  s.lines[rowIdx] = newText;
+  s.dirty = true;
+  renderPaneHeader(side);
+}
+
+/* ============================================================
+   RENDER ROWS INTO BOTH PANES
+   ============================================================ */
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function spansToHtml(spans){
+  if(!spans) return '';
+  return spans.map(sp=>{
+    const safe = escapeHtml(sp.text);
+    if(sp.type==='eq') return safe;
+    if(sp.type==='del') return `<span class="del-inline">${safe}</span>`;
+    return `<span class="ins-inline">${safe}</span>`;
+  }).join('');
+}
+
+function rowIconAndClass(type){
+  switch(type){
+    case 'add': return {cls:'row-add', icon:'+'};
+    case 'del': return {cls:'row-del', icon:'\u2212'};
+    case 'mod': return {cls:'row-mod', icon:'~'};
+    default: return {cls:'', icon:''};
+  }
+}
+
+function buildPaneHtml(side){
+  const rows = state.alignedRows;
+  let html = '<table class="code-table"><tbody>';
+  for(let i=0;i<rows.length;i++){
+    const r = rows[i];
+    const isLeft = side === 'left';
+    const num = isLeft ? r.lNum : r.rNum;
+    const text = isLeft ? r.lText : r.rText;
+    let rowType = r.type;
+    // For 'add' rows, left pane shows empty; for 'del' rows, right pane shows empty
+    let displayEmpty = false;
+    if(rowType === 'add' && isLeft) displayEmpty = true;
+    if(rowType === 'del' && !isLeft) displayEmpty = true;
+
+    const {cls, icon} = rowIconAndClass(rowType);
+    const rowCls = displayEmpty ? 'row-empty' : cls;
+    const iconChar = displayEmpty ? '' : icon;
+
+    // a gutter icon is actionable (clickable to merge) when there's real content on THIS
+    // side that could be pushed/pulled to the OTHER side for this diff row
+    let actionable = false, title = '';
+    if(rowType !== 'eq'){
+      if(isLeft && rowType !== 'add'){ actionable = true; title = 'Merge this line into right →'; }
+      if(!isLeft && rowType !== 'del'){ actionable = true; title = '← Merge this line into left'; }
+    }
+
+    let contentHtml;
+    if(displayEmpty){
+      contentHtml = '&nbsp;';
+    } else if(rowType === 'mod' && r.inline){
+      contentHtml = spansToHtml(isLeft ? r.inline.oldSpans : r.inline.newSpans) || '&nbsp;';
+    } else {
+      contentHtml = text === '' ? '&nbsp;' : escapeHtml(text);
+    }
+
+    html += `<tr class="${rowCls}" data-row="${i}">`;
+    html += `<td class="ln">${num !== null && num !== undefined ? num : ''}</td>`;
+    html += `<td class="gutter-icon${actionable ? ' actionable' : ''}"${title ? ` title="${title}"` : ''}>${iconChar}</td>`;
+    html += `<td class="code-cell editable" contenteditable="${!displayEmpty}" data-row="${i}" data-side="${side}" spellcheck="false"><span class="content">${contentHtml}</span></td>`;
+    html += `</tr>`;
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderRows(){
+  // renderRows is only invoked once both sides are loaded (see recomputeDiff)
+  showDropzones(false, false);
+
+  ensureEditorScroll('left');
+  ensureEditorScroll('right');
+
+  document.getElementById('editor-left').innerHTML = buildPaneHtml('left');
+  document.getElementById('editor-right').innerHTML = buildPaneHtml('right');
+
+  attachCellHandlers('left');
+  attachCellHandlers('right');
+  drawSpine();
+}
+
+function showDropzones(showLeft, showRight){
+  els['dropzone-left'].style.display = showLeft ? 'flex' : 'none';
+  els['dropzone-right'].style.display = showRight ? 'flex' : 'none';
+}
+
+function ensureEditorScroll(side){
+  const pane = els['pane-' + side];
+  let scroller = document.getElementById('editor-' + side + '-scroll');
+  if(!scroller){
+    scroller = document.createElement('div');
+    scroller.className = 'editor-scroll';
+    scroller.id = 'editor-' + side + '-scroll';
+    const inner = document.createElement('div');
+    inner.id = 'editor-' + side;
+    scroller.appendChild(inner);
+    pane.appendChild(scroller);
+    scroller.addEventListener('scroll', ()=> onPaneScroll(side));
+  }
+}
+
+/* ============================================================
+   EDITABLE CELLS -> MERGE / EDIT LOGIC
+   ============================================================ */
+function attachCellHandlers(side){
+  const editor = document.getElementById('editor-' + side);
+  if(!editor) return;
+  editor.querySelectorAll('.code-cell.editable').forEach(cell=>{
+    cell.addEventListener('blur', onCellEdit);
+    cell.addEventListener('keydown', onCellKeydown);
+  });
+}
+
+function onCellKeydown(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    e.target.blur();
+  }
+  if(e.key === 'Escape'){
+    e.preventDefault();
+    e.target.blur();
+  }
+}
+
+function onCellEdit(e){
+  const cell = e.target;
+  const rowIdx = parseInt(cell.dataset.row, 10);
+  const side = cell.dataset.side;
+  const newText = cell.textContent.replace(/\u00a0/g,'');
+  const row = state.alignedRows[rowIdx];
+  if(!row) return;
+
+  const s = state[side];
+  const lineNum = side === 'left' ? row.lNum : row.rNum;
+  if(!lineNum) return; // empty placeholder row, ignore
+  const arrIdx = lineNum - 1;
+  if(s.lines[arrIdx] === newText) return; // no change
+
+  s.lines[arrIdx] = newText;
+  s.dirty = true;
+  renderPaneHeader(side);
+  recomputeDiff();
+}
+
+/* ============================================================
+   MERGE ACTIONS: copy a line/block from one side to the other
+   (double-click on gutter icon to merge that row)
+   ============================================================ */
+function mergeRow(rowIdx, direction){
+  // direction: 'toRight' copies left's content into right; 'toLeft' copies right's into left
+  const row = state.alignedRows[rowIdx];
+  if(!row) return;
+
+  if(direction === 'toRight'){
+    if(row.type === 'add'){
+      // right has extra line not in left -> remove it from right? Not common via this control.
+      return;
+    }
+    if(row.lNum === null) return;
+    const text = state.left.lines[row.lNum-1];
+    if(row.rNum !== null){
+      state.right.lines[row.rNum-1] = text;
+    } else {
+      // insert into right after previous matching point
+      const insertAt = findInsertionPoint(rowIdx, 'right');
+      state.right.lines.splice(insertAt, 0, text);
+    }
+    state.right.dirty = true;
+    renderPaneHeader('right');
+  } else {
+    if(row.type === 'del'){
+      return;
+    }
+    if(row.rNum === null) return;
+    const text = state.right.lines[row.rNum-1];
+    if(row.lNum !== null){
+      state.left.lines[row.lNum-1] = text;
+    } else {
+      const insertAt = findInsertionPoint(rowIdx, 'left');
+      state.left.lines.splice(insertAt, 0, text);
+    }
+    state.left.dirty = true;
+    renderPaneHeader('left');
+  }
+  recomputeDiff();
+}
+
+function findInsertionPoint(rowIdx, side){
+  // find nearest preceding row that has a line number for `side`, insert after it
+  for(let i=rowIdx-1;i>=0;i--){
+    const r = state.alignedRows[i];
+    const num = side === 'left' ? r.lNum : r.rNum;
+    if(num !== null && num !== undefined) return num; // insert at this index (0-based after that line)
+  }
+  return 0;
+}
+
+/* Click a gutter icon to merge that row's change to the other side.
+   Left gutter → pushes left's line into right. Right gutter → pulls right's line into left. */
+document.addEventListener('click', (e)=>{
+  const cell = e.target.closest('.gutter-icon');
+  if(!cell) return;
+  const tr = cell.closest('tr');
+  if(!tr) return;
+  const rowIdx = parseInt(tr.dataset.row, 10);
+  const row = state.alignedRows[rowIdx];
+  if(!row || row.type === 'eq') return;
+  const pane = cell.closest('.pane');
+  if(!pane) return;
+  const side = pane.classList.contains('left') ? 'left' : 'right';
+  if(side === 'left'){
+    if(row.type === 'add') return; // nothing on the left to push
+    mergeRow(rowIdx, 'toRight');
+    showToast('Merged line → right');
+  } else {
+    if(row.type === 'del') return; // nothing on the right to pull
+    mergeRow(rowIdx, 'toLeft');
+    showToast('Merged line → left');
+  }
+});
+
+/* ============================================================
+   SCROLL SYNC
+   ============================================================ */
+function onPaneScroll(side){
+  if(state.syncingScroll) return;
+  state.syncingScroll = true;
+  const src = document.getElementById('editor-' + side + '-scroll');
+  const otherSide = side === 'left' ? 'right' : 'left';
+  const dst = document.getElementById('editor-' + otherSide + '-scroll');
+  if(src && dst){
+    dst.scrollTop = src.scrollTop;
+    dst.scrollLeft = src.scrollLeft;
+  }
+  drawSpine();
+  requestAnimationFrame(()=> state.syncingScroll = false);
+}
+
+/* ============================================================
+   STATS
+   ============================================================ */
+function updateStats(){
+  let add=0, del=0, mod=0;
+  state.alignedRows.forEach(r=>{
+    if(r.type==='add') add++;
+    else if(r.type==='del') del++;
+    else if(r.type==='mod') mod++;
+  });
+  els['count-add'].textContent = add;
+  els['count-del'].textContent = del;
+  els['count-mod'].textContent = mod;
+
+  if(state.left.loaded && state.right.loaded){
+    if(add===0 && del===0 && mod===0){
+      els['status-msg'].textContent = 'Files are identical';
+    } else {
+      els['status-msg'].textContent = `${add+del+mod} difference${add+del+mod===1?'':'s'} found`;
+    }
+  } else {
+    els['status-msg'].textContent = 'Drop or paste two files to compare';
+  }
+}
+
+/* ============================================================
+   DIFF NAVIGATION
+   ============================================================ */
+function updateDiffPosition(){
+  const total = state.diffBlocks.length;
+  const cur = total ? state.currentDiffIdx+1 : 0;
+  els['diff-position'].textContent = `${cur} / ${total}`;
+  els['btn-prev-diff'].disabled = total===0;
+  els['btn-next-diff'].disabled = total===0;
+}
+
+function scrollToRow(rowIdx){
+  const scrollerL = document.getElementById('editor-left-scroll');
+  const target = document.querySelector(`#editor-left tr[data-row="${rowIdx}"]`) ||
+                 document.querySelector(`#editor-right tr[data-row="${rowIdx}"]`);
+  if(target && scrollerL){
+    const scroller = target.closest('.editor-scroll');
+    const targetTop = target.offsetTop - scroller.clientHeight/2 + target.clientHeight/2;
+    scroller.scrollTop = Math.max(0,targetTop);
+    onPaneScroll(scroller.id.includes('left') ? 'left':'right');
+  }
+  // highlight
+  document.querySelectorAll('.row-current-diff').forEach(el=>el.classList.remove('row-current-diff'));
+  document.querySelectorAll(`tr[data-row="${rowIdx}"]`).forEach(el=>el.classList.add('row-current-diff'));
+}
+
+function goToDiff(delta){
+  if(!state.diffBlocks.length) return;
+  state.currentDiffIdx = (state.currentDiffIdx + delta + state.diffBlocks.length) % state.diffBlocks.length;
+  scrollToRow(state.diffBlocks[state.currentDiffIdx]);
+  updateDiffPosition();
+}
+els['btn-prev-diff'].addEventListener('click', ()=>goToDiff(-1));
+els['btn-next-diff'].addEventListener('click', ()=>goToDiff(1));
+
+document.addEventListener('keydown', (e)=>{
+  if(e.altKey && e.key === 'ArrowDown'){ e.preventDefault(); goToDiff(1); }
+  if(e.altKey && e.key === 'ArrowUp'){ e.preventDefault(); goToDiff(-1); }
+});
+
+/* ============================================================
+   OVERVIEW STRIP (minimap of diff locations)
+   ============================================================ */
+function updateOverview(){
+  const ov = els['overview'];
+  ov.innerHTML = '';
+  const total = state.alignedRows.length;
+  if(!total) return;
+  const h = ov.clientHeight || 600;
+  state.alignedRows.forEach((r,i)=>{
+    if(r.type==='eq') return;
+    const top = (i/total)*h;
+    const height = Math.max(2, h/total);
+    const mark = document.createElement('div');
+    mark.className = 'ov-mark';
+    mark.style.top = top+'px';
+    mark.style.height = height+'px';
+    mark.style.background = r.type==='add' ? 'var(--add-border)' : r.type==='del' ? 'var(--del-border)' : 'var(--mod-border)';
+    mark.dataset.row = i;
+    ov.appendChild(mark);
+  });
+}
+els['overview'].addEventListener('click', (e)=>{
+  const h = els['overview'].clientHeight;
+  const frac = e.offsetY / h;
+  const rowIdx = Math.floor(frac * state.alignedRows.length);
+  scrollToRow(rowIdx);
+});
+
+/* ============================================================
+   SPINE CONNECTOR LINES (between panes)
+   ============================================================ */
+function drawSpine(){
+  const svg = els['spine-svg'];
+  const spineEl = document.getElementById('spine');
+  if(!spineEl) return;
+  const h = spineEl.clientHeight;
+  svg.setAttribute('height', h);
+  svg.setAttribute('width', 34);
+  svg.innerHTML = '';
+
+  const leftScroller = document.getElementById('editor-left-scroll');
+  const rightScroller = document.getElementById('editor-right-scroll');
+  if(!leftScroller || !rightScroller) return;
+
+  const leftRect = leftScroller.getBoundingClientRect();
+  const spineRect = spineEl.getBoundingClientRect();
+
+  const leftRows = document.querySelectorAll('#editor-left tr');
+  const rightRows = document.querySelectorAll('#editor-right tr');
+  if(!leftRows.length) return;
+
+  let svgHtml = '';
+  for(let i=0;i<state.alignedRows.length;i++){
+    const r = state.alignedRows[i];
+    if(r.type === 'eq') continue;
+    const lRow = leftRows[i];
+    const rRow = rightRows[i];
+    if(!lRow || !rRow) continue;
+    const lBox = lRow.getBoundingClientRect();
+    const rBox = rRow.getBoundingClientRect();
+    // only draw if visible within the spine's vertical viewport
+    if(lBox.bottom < spineRect.top-20 || lBox.top > spineRect.bottom+20) continue;
+    const y1 = lBox.top + lBox.height/2 - spineRect.top;
+    const y2 = rBox.top + rBox.height/2 - spineRect.top;
+    const color = r.type==='add' ? 'var(--add-border)' : r.type==='del' ? 'var(--del-border)' : 'var(--mod-border)';
+    svgHtml += `<path d="M0,${y1} C12,${y1} 22,${y2} 34,${y2}" stroke="${color}" stroke-width="1.5" fill="none" opacity="0.55"/>`;
+  }
+  svg.innerHTML = svgHtml;
+}
+window.addEventListener('resize', ()=>{ drawSpine(); updateOverview(); });
+
+/* ============================================================
+   TOOLBAR ACTIONS
+   ============================================================ */
+els['btn-swap'].addEventListener('click', ()=>{
+  const tmp = JSON.parse(JSON.stringify(state.left));
+  state.left = JSON.parse(JSON.stringify(state.right));
+  state.right = tmp;
+  renderPaneHeader('left');
+  renderPaneHeader('right');
+  updateDownloadButtons();
+  recomputeDiff();
+  showToast('Swapped left and right');
+});
+
+els['select-mode'].addEventListener('change', (e)=>{
+  state.diffMode = e.target.value;
+  recomputeDiff();
+});
+
+els['chk-ignore-ws'].addEventListener('change', (e)=>{
+  state.ignoreWs = e.target.checked;
+  recomputeDiff();
+});
+
+function downloadSide(side){
+  const s = state[side];
+  if(!s.loaded) return;
+  const text = s.lines.join('\n');
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  let filename = s.name;
+  if(s.dirty){
+    const dotIdx = filename.lastIndexOf('.');
+    if(dotIdx > 0){
+      filename = filename.slice(0,dotIdx) + '*' + filename.slice(dotIdx);
+    } else {
+      filename = filename + '*';
+    }
+  }
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Downloaded "${filename}"`);
+}
+els['btn-download-left'].addEventListener('click', ()=>downloadSide('left'));
+els['btn-download-right'].addEventListener('click', ()=>downloadSide('right'));
+
+els['btn-reset'].addEventListener('click', ()=>{
+  state.left = { name:'', lang:'', original:'', lines:[''], dirty:false, loaded:false };
+  state.right = { name:'', lang:'', original:'', lines:[''], dirty:false, loaded:false };
+  state.alignedRows = [];
+  state.diffBlocks = [];
+  state.currentDiffIdx = -1;
+  renderPaneHeader('left');
+  renderPaneHeader('right');
+  updateDownloadButtons();
+  document.getElementById('editor-left-scroll')?.remove();
+  document.getElementById('editor-right-scroll')?.remove();
+  showDropzones(true, true);
+  updateStats();
+  updateOverview();
+  els['spine-svg'].innerHTML = '';
+  els['diff-position'].textContent = '0 / 0';
+  showToast('Cleared both panes');
+});
+
+/* ============================================================
+   INITIAL STATE
+   ============================================================ */
+renderPaneHeader('left');
+renderPaneHeader('right');
+showDropzones(true, true);
+updateStats();
+updateDiffPosition();
+
+})();
+</script>
+<script src="app-switcher.js"></script>
+<script src="footer-injector.js"></script>
+</body>
+</html>

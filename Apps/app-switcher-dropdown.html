@@ -1,0 +1,15 @@
+<!--
+  app-switcher-dropdown.html
+  ──────────────────────────
+  Markup for the "switch app" popover that appears under a logo.
+  This file only defines the panel's static chrome (label + empty
+  list container). The actual app entries (logo, name, link) are
+  built by app-switcher.js from its APPS list and inserted into
+  #as-app-list — so you never need to touch this file when adding,
+  renaming, or reordering apps.
+
+  Safe to restyle freely (it's just markup); visual rules live in
+  app-switcher.css.
+-->
+<div class="as-dropdown-label">Switch app</div>
+<nav class="as-app-list" id="as-app-list" role="menu" aria-label="Other apps in the suite"></nav>

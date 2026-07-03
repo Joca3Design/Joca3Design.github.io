@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="QCFavicon.png" type="image/x-icon">
+
+<!-- Primary SEO -->
+<title>QuickCollage | Fast Photo Layouts & Print Prep</title>
+<meta name="description" content="Quickly paste screenshots or drag images into preset layouts ready for printing. 100% client-side, private, and completely free with no ads.">
+<meta name="keywords" content="photo collage maker, print screenshots online, image layout tool, screenshot printer, browser collage creator, secure photo grid">
+<meta name="author" content="Joca3Design">
+
+<!-- Open Graph / Facebook / Discord -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="QuickCollage | Fast Photo Layouts & Print Prep">
+<meta property="og:description" content="Drag, paste, and arrange images into print-ready layouts instantly. No uploads, no ads, 100% private.">
+<meta property="og:image" content="https://yourdomain.com/assets/quickcollage-preview.png">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="QuickCollage | Fast Photo Layouts & Print Prep">
+<meta name="twitter:description" content="Drag, paste, and arrange images into print-ready layouts instantly. No uploads, no ads, 100% private.">
+<meta name="twitter:image" content="https://yourdomain.com/assets/quickcollage-preview.png">
+
+<style>
+/* ── Theme variables (from theme.css) ── */
+:root{
+  --bg-0:#0b0d11;
+  --bg-1:#10131a;
+  --bg-2:#151922;
+  --bg-3:#1b212d;
+  --line:#232a38;
+  --text-0:#e8ebf1;
+  --text-1:#aab2c5;
+  --text-2:#717b91;
+  --accent:#5b8cff;
+  --accent-soft:#5b8cff22;
+  --accent-dim:#3d63c9;
+  --add-bg:#0f2a1d;
+  --add-border:#2f8f5b;
+  --add-text:#6fd99a;
+  --del-bg:#33161a;
+  --del-border:#c4505f;
+  --del-text:#e98a93;
+  --mono:'JetBrains Mono','Fira Code',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --radius:8px;
+  --shadow:0 8px 24px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg-0);color:var(--text-0);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+
+/* ── Shell ── */
+#app{display:flex;flex-direction:column;height:100vh;}
+
+/* ── Topbar ── */
+#topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 14px;
+  background:var(--bg-1);
+  border-bottom:1px solid var(--line);
+  flex-shrink:0;flex-wrap:wrap;
+  z-index:30;
+}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.01em;color:var(--text-0);margin-right:4px;white-space:nowrap;}
+.brand .mark{width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#8b6bff);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.brand .slash{color:var(--text-2);font-weight:400;}
+.tb-divider{width:1px;height:22px;background:var(--line);margin:0 2px;flex-shrink:0;}
+.tb-spacer{flex:1;}
+.tb-label{font-size:11.5px;color:var(--text-2);white-space:nowrap;}
+
+select.tb-select{
+  background:var(--bg-2);border:1px solid var(--line);color:var(--text-1);
+  font-family:var(--sans);font-size:12.5px;padding:6px 8px;border-radius:6px;cursor:pointer;
+  outline:none;
+}
+select.tb-select:focus{border-color:var(--accent);}
+
+button.tb-btn{
+  display:flex;align-items:center;gap:5px;
+  background:var(--bg-2);border:1px solid var(--line);color:var(--text-1);
+  font-family:var(--sans);font-size:12.5px;font-weight:500;
+  padding:6px 11px;border-radius:6px;cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s;white-space:nowrap;
+}
+button.tb-btn:hover{background:var(--bg-3);color:var(--text-0);border-color:#2c3444;}
+button.tb-btn:active{transform:translateY(1px);}
+button.tb-btn.primary{background:var(--accent-dim);border-color:var(--accent-dim);color:#fff;}
+button.tb-btn.primary:hover{background:var(--accent);border-color:var(--accent);}
+button.tb-btn.danger{background:#451d22;border-color:var(--del-border);color:var(--del-text);}
+button.tb-btn.danger:hover{background:var(--del-bg);border-color:var(--del-border);color:#fff;}
+button.tb-btn svg{width:13px;height:13px;flex-shrink:0;}
+
+/* orientation toggle */
+.orient-group{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+.orient-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 10px;font-size:12px;cursor:pointer;
+  background:var(--bg-2);border:none;color:var(--text-2);font-family:var(--sans);
+  transition:background .12s,color .12s;
+}
+.orient-btn.active{background:var(--accent-dim);color:#fff;}
+.orient-btn:not(:last-child){border-right:1px solid var(--line);}
+.orient-btn svg{width:13px;height:13px;}
+
+/* ── Main canvas area ── */
+#canvas-area{
+  flex:1;overflow:auto;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:32px 24px;
+  background:var(--bg-0);
+  position:relative;
+}
+
+/* ── Sheet ── */
+.sheet{
+  background:#fff;
+  box-shadow:0 4px 32px rgba(0,0,0,.55);
+  position:relative;
+  flex-shrink:0;
+}
+
+/* grid inside sheet */
+.sheet-grid{
+  width:100%;height:100%;
+  display:grid;
+  gap:0;
+}
+
+/* each cell */
+.cell{
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  border:1px dashed #ccc;
+}
+.cell.has-image{border:none;}
+.cell img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;  /* never crop */
+  object-position:center;
+}
+
+/* drop hint inside cell */
+.cell-hint{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:#aaa;pointer-events:none;
+  font-family:var(--sans);
+}
+.cell-hint svg{width:28px;height:28px;opacity:.5;}
+.cell-hint span{font-size:11.5px;}
+
+/* cell remove btn */
+.cell-remove{
+  position:absolute;top:4px;right:4px;
+  width:22px;height:22px;
+  background:rgba(0,0,0,.55);
+  border:none;border-radius:50%;
+  color:#fff;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  font-size:13px;line-height:1;
+  z-index:5;
+}
+.cell:hover .cell-remove.visible{display:flex;}
+
+/* ── Drop overlay ── */
+#drop-overlay{
+  position:fixed;inset:0;background:rgba(11,13,17,.88);z-index:200;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);
+}
+#drop-overlay.active{display:flex;}
+.drop-card{
+  border:2px dashed var(--accent);border-radius:16px;padding:60px 80px;
+  text-align:center;color:var(--text-0);background:var(--accent-soft);
+}
+.drop-card svg{width:40px;height:40px;color:var(--accent);margin-bottom:12px;}
+.drop-card h3{margin:0 0 4px;font-size:18px;}
+.drop-card p{margin:0;color:var(--text-1);font-size:13px;}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:var(--bg-3);border:1px solid var(--line);color:var(--text-0);
+  padding:9px 16px;border-radius:8px;font-size:13px;box-shadow:var(--shadow);
+  z-index:300;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;
+  display:flex;align-items:center;gap:8px;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast svg{width:14px;height:14px;color:var(--accent);}
+
+/* ── Status bar ── */
+#statusbar{
+  display:flex;align-items:center;gap:14px;
+  padding:5px 16px;background:var(--bg-1);border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--text-2);font-family:var(--mono);flex-shrink:0;
+}
+.sb-spacer{flex:1;}
+
+/* ══════════════ PRINT STYLES ══════════════ */
+@media print {
+  body, html {
+    background: #fff !important;
+    /* Cambiamos el height fijo por min-height y ocultamos el desbordamiento fraccional */
+    min-height: 100% !important;
+    height: auto !important; 
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Escudo: Oculta CUALQUIER elemento inyectado globalmente (ej. app-switcher o footer) */
+  body > *:not(#app) {
+    display: none !important;
+  }
+  
+  #app { 
+    height: auto !important; 
+    display: block !important; 
+  }
+  
+  #topbar, #statusbar, #drop-overlay, #toast, .cell-remove { 
+    display: none !important; 
+  }
+  
+  #canvas-area {
+    padding: 0 !important;
+    background: #fff !important;
+    display: block !important;
+    height: auto !important;
+    overflow: hidden !important; /* Vital para contener la hoja sin sangrados */
+  }
+  
+  .sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border: none !important;
+    /* Regresamos la hoja al flujo normal para que dicte su propio alto */
+    position: relative !important; 
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .cell {
+    outline: none !important;
+    border: none !important;
+  }
+
+  .cell-hint{
+    display: none !important;
+  }
+
+  @page { margin: 0; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Top bar ── -->
+  <div id="topbar">
+    <div class="brand">
+      <img src="QCLogo.png" alt="" height="25px">
+    </div>
+
+    <div class="tb-divider"></div>
+
+    <span class="tb-label">Paper Size</span>
+    <select class="tb-select" id="sel-paper">
+      <option value="letter">Letter (216×279 mm)</option>
+      <option value="legal">Legal (216×356 mm)</option>
+    </select>
+
+    <div class="tb-divider"></div>
+
+    <span class="tb-label">Orientación</span>
+    <div class="orient-group">
+      <button class="orient-btn active" id="btn-portrait" title="Portrait">
+        <svg viewBox="0 0 10 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="8" height="12" rx="1"/></svg>
+        Portrait
+      </button>
+      <button class="orient-btn" id="btn-landscape" title="Landscape">
+        <svg viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="8" rx="1"/></svg>
+        Landscape
+      </button>
+    </div>
+
+    <div class="tb-divider"></div>
+
+    <span class="tb-label">Layout</span>
+    <select class="tb-select" id="sel-layout">
+      <option value="1">Full Page (1 image)</option>
+      <option value="2h">2 — Top / Bottom</option>
+      <option value="2v">2 — Left / Right</option>
+      <option value="3h">3 — Rows</option>
+      <option value="3v">3 — Columns</option>
+      <option value="4">4 — 2×2 Grid</option>
+    </select>
+
+    <div class="tb-spacer"></div>
+
+    <button class="tb-btn danger" id="btn-clear">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9"/></svg>
+      Clear
+    </button>
+    <button class="tb-btn primary" id="btn-print">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="1" width="10" height="8" rx="1"/><path d="M3 9H1v5h14V9h-2"/><rect x="4" y="11" width="8" height="4"/><circle cx="12" cy="11" r=".8" fill="currentColor"/></svg>
+      Print
+    </button>
+  </div>
+
+  <!-- ── Canvas ── -->
+  <div id="canvas-area">
+    <div class="sheet" id="sheet">
+      <div class="sheet-grid" id="sheet-grid">
+        <!-- cells injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Status bar ── -->
+  <div id="statusbar">
+    <span id="sb-size">—</span>
+    <span class="sb-spacer"></span>
+    <span id="sb-hint">Ctrl+V or drag images · Click a cell to select</span>
+  </div>
+
+</div>
+
+<!-- Drop overlay -->
+<div id="drop-overlay">
+  <div class="drop-card">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+    <h3>Suelta la imagen aquí</h3>
+    <p>Se colocará en la siguiente celda disponible</p>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4m0 2v1"/></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+/* ══ Config ══ */
+const PAPER = {
+  letter:{ w:216, h:279 },
+  legal: { w:216, h:356 }
+};
+const MARGIN_MM = 10; // 10 mm all sides
+const PX_PER_MM = 3.7795; // 96 dpi
+
+/* ══ State ══ */
+let paper = 'letter';
+let landscape = false;
+let layoutKey = '1';
+let cells = []; // array of {el, img:null|HTMLImageElement}
+let activeCellIdx = 0; // where next paste/drop goes
+
+/* ══ DOM refs ══ */
+const sheet      = document.getElementById('sheet');
+const grid       = document.getElementById('sheet-grid');
+const overlay    = document.getElementById('drop-overlay');
+const sbSize     = document.getElementById('sb-size');
+const toastEl    = document.getElementById('toast');
+const toastMsg   = document.getElementById('toast-msg');
+const selPaper   = document.getElementById('sel-paper');
+const selLayout  = document.getElementById('sel-layout');
+const btnPortrait  = document.getElementById('btn-portrait');
+const btnLandscape = document.getElementById('btn-landscape');
+
+/* ══ Toast ══ */
+let toastTimer;
+function showToast(msg){
+  toastMsg.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toastEl.classList.remove('show'),2200);
+}
+
+/* ══ Sheet sizing ══ */
+function applySheet(){
+  const p = PAPER[paper];
+  let wMM = p.w, hMM = p.h;
+  if(landscape){ [wMM,hMM]=[hMM,wMM]; }
+
+  const maxW = window.innerWidth  - 48;
+  const maxH = window.innerHeight - 120;
+
+  const contentWmm = wMM - MARGIN_MM*2;
+  const contentHmm = hMM - MARGIN_MM*2;
+
+  // scale so sheet fits viewport
+  const scaleW = maxW / (wMM * PX_PER_MM);
+  const scaleH = maxH / (hMM * PX_PER_MM);
+  const scale  = Math.min(1, scaleW, scaleH);
+
+  const sheetWpx = wMM * PX_PER_MM * scale;
+  const sheetHpx = hMM * PX_PER_MM * scale;
+  const marginPx = MARGIN_MM * PX_PER_MM * scale;
+
+  sheet.style.width  = sheetWpx + 'px';
+  sheet.style.height = sheetHpx + 'px';
+  sheet.style.padding = marginPx + 'px';
+
+  sbSize.textContent = `${wMM}×${hMM} mm  ·  scale ${Math.round(scale*100)}%`;
+
+  // For print: the real mm sizes
+  sheet.style.setProperty('--sheet-w', wMM+'mm');
+  sheet.style.setProperty('--sheet-h', hMM+'mm');
+  sheet.style.setProperty('--sheet-margin', MARGIN_MM+'mm');
+}
+
+/* ══ Grid layout ══ */
+function gridConfig(key, isLandscape){
+  // When landscape, "2h" means cols side by side; "2v" means rows
+  // Vertical sheet: 2h = top/bottom, 2v = left/right
+  // Horizontal sheet: content "hacia los lados" => swap meaning
+  const swap = isLandscape;
+  switch(key){
+    case '1':  return { cols:1, rows:1, n:1 };
+    case '2h': return swap ? { cols:2,rows:1,n:2 } : { cols:1,rows:2,n:2 };
+    case '2v': return swap ? { cols:1,rows:2,n:2 } : { cols:2,rows:1,n:2 };
+    case '3h': return swap ? { cols:3,rows:1,n:3 } : { cols:1,rows:3,n:3 };
+    case '3v': return swap ? { cols:1,rows:3,n:3 } : { cols:3,rows:1,n:3 };
+    case '4':  return { cols:2, rows:2, n:4 };
+    default:   return { cols:1, rows:1, n:1 };
+  }
+}
+
+function buildGrid(){
+  const cfg = gridConfig(layoutKey, landscape);
+  grid.style.gridTemplateColumns = `repeat(${cfg.cols}, 1fr)`;
+  grid.style.gridTemplateRows    = `repeat(${cfg.rows}, 1fr)`;
+
+  // Preserve existing images
+  const existing = cells.map(c=>c.imgSrc||null);
+  cells=[];
+  grid.innerHTML='';
+
+  for(let i=0;i<cfg.n;i++){
+    const cell = document.createElement('div');
+    cell.className='cell';
+    cell.dataset.idx=i;
+
+    const hint=document.createElement('div');
+    hint.className='cell-hint';
+    hint.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <path d="M3 15l5-5 4 4 3-3 6 6"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+    </svg><span>${i+1}</span>`;
+    cell.appendChild(hint);
+
+    const removeBtn=document.createElement('button');
+    removeBtn.className='cell-remove';
+    removeBtn.innerHTML='×';
+    removeBtn.title='Quitar imagen';
+    removeBtn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      clearCell(i);
+    });
+    cell.appendChild(removeBtn);
+
+    cell.addEventListener('click',()=>{ activeCellIdx=i; highlightActive(); });
+
+    cells.push({ el:cell, imgSrc:null });
+    grid.appendChild(cell);
+
+    // restore image if it existed
+    if(existing[i]){ loadImageIntoCell(i, existing[i]); }
+  }
+
+  if(activeCellIdx>=cfg.n) activeCellIdx=0;
+  highlightActive();
+}
+
+function highlightActive(){
+  cells.forEach((c,i)=>{
+    c.el.style.outline = (i===activeCellIdx) ? '2px solid #5b8cff' : '';
+  });
+}
+
+function clearCell(idx){
+  const c=cells[idx];
+  c.imgSrc=null;
+  c.el.innerHTML='';
+  c.el.classList.remove('has-image');
+
+  // re-add hint
+  const hint=document.createElement('div');
+  hint.className='cell-hint';
+  hint.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <path d="M3 15l5-5 4 4 3-3 6 6"/>
+    <circle cx="8.5" cy="8.5" r="1.5"/>
+  </svg><span>${idx+1}</span>`;
+  c.el.appendChild(hint);
+
+  const removeBtn=document.createElement('button');
+  removeBtn.className='cell-remove';
+  removeBtn.innerHTML='×';
+  removeBtn.addEventListener('click',(e)=>{e.stopPropagation();clearCell(idx);});
+  c.el.appendChild(removeBtn);
+  c.el.addEventListener('click',()=>{ activeCellIdx=idx; highlightActive(); });
+
+  highlightActive();
+}
+
+/* ══ Load image into cell ══ */
+function loadImageIntoCell(idx, src){
+  if(idx>=cells.length) return;
+  const c=cells[idx];
+  c.imgSrc=src;
+  c.el.innerHTML='';
+  c.el.classList.add('has-image');
+
+  const img=document.createElement('img');
+  img.src=src;
+  img.draggable=false;
+  c.el.appendChild(img);
+
+  const removeBtn=document.createElement('button');
+  removeBtn.className='cell-remove visible';
+  removeBtn.innerHTML='×';
+  removeBtn.title='Quitar imagen';
+  removeBtn.addEventListener('click',(e)=>{e.stopPropagation();clearCell(idx);});
+  c.el.appendChild(removeBtn);
+  c.el.addEventListener('click',()=>{ activeCellIdx=idx; highlightActive(); });
+}
+
+function placeImage(src){
+  // find next empty cell starting from activeCellIdx
+  let target = activeCellIdx;
+  for(let i=0;i<cells.length;i++){
+    const idx=(activeCellIdx+i)%cells.length;
+    if(!cells[idx].imgSrc){ target=idx; break; }
+  }
+  loadImageIntoCell(target, src);
+  // advance
+  activeCellIdx=(target+1)%cells.length;
+  highlightActive();
+  showToast(`Imagen colocada en celda ${target+1}`);
+}
+
+function imageFromFile(file){
+  if(!file||!file.type.startsWith('image/')) return;
+  const reader=new FileReader();
+  reader.onload=e=>placeImage(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+/* ══ Paste (Ctrl+V) ══ */
+document.addEventListener('paste',e=>{
+  const items=[...(e.clipboardData||e.originalEvent.clipboardData).items];
+  const imgItem=items.find(i=>i.type.startsWith('image/'));
+  if(imgItem){ imageFromFile(imgItem.getAsFile()); }
+});
+
+/* ══ Drag & drop on whole window ══ */
+let dragCounter=0;
+document.addEventListener('dragenter',e=>{
+  e.preventDefault();
+  dragCounter++;
+  overlay.classList.add('active');
+});
+document.addEventListener('dragleave',()=>{
+  dragCounter--;
+  if(dragCounter<=0){ dragCounter=0; overlay.classList.remove('active'); }
+});
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{
+  e.preventDefault();
+  dragCounter=0;
+  overlay.classList.remove('active');
+  const files=[...e.dataTransfer.files];
+  const imgFiles=files.filter(f=>f.type.startsWith('image/'));
+  if(imgFiles.length){
+    imgFiles.forEach(f=>imageFromFile(f));
+  } else {
+    // check for image URL in dataTransfer
+    const url=e.dataTransfer.getData('text/uri-list')||e.dataTransfer.getData('text/plain');
+    if(url && url.match(/\.(png|jpg|jpeg|gif|webp|bmp|svg)/i)){
+      placeImage(url);
+    }
+  }
+});
+
+/* ══ Controls ══ */
+selPaper.addEventListener('change',()=>{ paper=selPaper.value; applySheet(); });
+selLayout.addEventListener('change',()=>{ layoutKey=selLayout.value; buildGrid(); applySheet(); });
+
+btnPortrait.addEventListener('click',()=>{
+  landscape=false;
+  btnPortrait.classList.add('active');
+  btnLandscape.classList.remove('active');
+  buildGrid(); applySheet();
+});
+btnLandscape.addEventListener('click',()=>{
+  landscape=true;
+  btnLandscape.classList.add('active');
+  btnPortrait.classList.remove('active');
+  buildGrid(); applySheet();
+});
+
+document.getElementById('btn-clear').addEventListener('click',()=>{
+  cells.forEach((_,i)=>clearCell(i));
+  activeCellIdx=0; highlightActive();
+  showToast('Celdas limpiadas');
+});
+
+document.getElementById('btn-print').addEventListener('click', () => {
+  // Limpiar el estilo inyectado previamente (evita bugs si el usuario imprime varias veces)
+  const oldStyle = document.getElementById('print-override');
+  if (oldStyle) oldStyle.remove();
+
+  const p = PAPER[paper];
+  let wMM = p.w, hMM = p.h;
+  if(landscape){ [wMM,hMM] = [hMM,wMM]; }
+
+  // Inyectar el CSS dinámico
+  const ps = document.createElement('style');
+  ps.id = 'print-override';
+  ps.media = 'print';
+  ps.textContent = `
+    @page { 
+      size: ${wMM}mm ${hMM}mm; 
+      margin: 0; 
+    }
+    .sheet {
+      width: ${wMM}mm !important;
+      height: ${hMM}mm !important;
+      padding: ${MARGIN_MM}mm !important;
+      box-shadow: none !important;
+    }
+  `;
+  document.head.appendChild(ps);
+
+  // Darle tiempo al navegador para recalcular el layout antes de bloquear el hilo
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      window.print();
+    }, 150); 
+  });
+});
+
+window.addEventListener('resize',()=>applySheet());
+
+/* ══ Atajos de Teclado (Ctrl+P / Cmd+P) ══ */
+document.addEventListener('keydown', (e) => {
+  // Detectar Ctrl + P (Windows/Linux) o Cmd + P (Mac)
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P' || e.keyCode === 80)) {
+    e.preventDefault(); // Bloquea el diálogo de impresión por defecto del navegador
+    document.getElementById('btn-print').click(); // Ejecuta la lógica exacta de tu botón
+  }
+});
+
+/* ══ Init ══ */
+buildGrid();
+applySheet();
+showToast('Pega una imagen con Ctrl+V o arrástrala aquí');
+</script>
+<script src="app-switcher.js"></script>
+<script src="footer-injector.js"></script>
+</body>
+</html>

@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!--
+    SequenceSpin — Image sequence previewer and encoder.
+    Drop this file next to theme.css and open in a browser.
+    Requires: Chrome 94+ / Edge 94+ for WebCodecs MP4 export.
+    GIF export works in all modern browsers.
+
+    External libraries (CDN, no build step):
+      • mp4-muxer  — packages raw WebCodecs chunks into a valid MP4 container
+      • gifshot    — pure-JS animated GIF encoder (runs in Web Workers)
+  -->
+  <link rel="stylesheet" href="theme.css">
+  <link rel="shortcut icon" href="SSFavicon.png" type="image/x-icon">
+
+  <!-- mp4-muxer: UMD build exposes window.mp4Muxer -->
+  <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@4/build/mp4-muxer.js"></script>
+  
+  <script>
+    if (typeof window.Mp4Muxer === 'undefined' && typeof window.mp4Muxer === 'undefined') {
+      document.write('<script src="https://unpkg.com/mp4-muxer@4/build/mp4-muxer.js"><\/script>');
+    }
+  </script>
+
+  <!-- gifshot: exposes window.gifshot -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+
+  <!-- Primary SEO -->
+  <title>SequenceSpin | Turn Image Frames into MP4 & GIF Animations</title>
+  <meta name="description" content="Sequence a set of image frames to create custom animations. Export as MP4 or GIF instantly. 100% client-side processing, secure, and ad-free.">
+  <meta name="keywords" content="image to gif converter, frame animation maker, png sequence to mp4, online animation creator, browser stop motion, sequence spin, sprite sheet tool">
+  <meta name="author" content="Joca3Design">
+
+  <!-- Open Graph / Facebook / Discord -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SequenceSpin | Turn Image Frames into MP4 & GIF Animations">
+  <meta property="og:description" content="Compile image frames into high-quality GIF or MP4 animations right in your browser. Fast, free, and completely private.">
+  <meta property="og:image" content="https://yourdomain.com/assets/sequencespin-preview.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SequenceSpin | Turn Image Frames into MP4 & GIF Animations">
+  <meta name="twitter:description" content="Compile image frames into high-quality GIF or MP4 animations right in your browser. Fast, free, and completely private.">
+  <meta name="twitter:image" content="https://yourdomain.com/assets/sequencespin-preview.png">
+
+  <style>
+    /* ============================================================
+       SequenceSpin — component styles layered on top of theme.css
+       All colours, radii, shadows, and fonts reference theme tokens.
+       ============================================================ */
+
+    /* ── Layout shell ──────────────────────────────────────────── */
+    #main {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Preview pane ──────────────────────────────────────────── */
+    #preview-pane {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      background: var(--bg-0);
+    }
+
+    #canvas-wrap {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The actual rendering surface — sized in JS via ResizeObserver */
+    #preview-canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #preview-canvas.ss-hidden { display: none; }
+
+    /*
+      Signature element: a very subtle scanline grid overlaid on the canvas.
+      It reads as "this is a sequence viewer, not a photo editor".
+      It's applied via a pseudo-element on canvas-wrap so it never bleeds
+      into the exported file — purely cosmetic chrome.
+    */
+    #canvas-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0, 0, 0, 0.04) 3px,
+        rgba(0, 0, 0, 0.04) 4px
+      );
+      z-index: 5;
+      transition: opacity 0.3s;
+    }
+
+    #canvas-wrap.scanlines-off::after { opacity: 0; }
+
+    /* ── Drop zone (shown until frames are loaded) ─────────────── */
+    #dropzone {
+      position: absolute;
+      inset: 20px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      border: 1.5px dashed var(--line);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-align: center;
+      padding: 32px;
+    }
+
+    #dropzone:hover,
+    #dropzone.drag-active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    #dropzone svg {
+      width: 38px;
+      height: 38px;
+      color: var(--text-2);
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+
+    #dropzone:hover svg,
+    #dropzone.drag-active svg { color: var(--accent); }
+
+    #dropzone h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-1);
+      letter-spacing: -0.01em;
+    }
+
+    #dropzone p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    #dropzone .dz-hint {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-2);
+      background: var(--bg-3);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 4px 10px;
+    }
+
+    #dropzone.ss-hidden { display: none; }
+
+    /* ── Loading overlay (shown during validation) ─────────────── */
+    #load-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: rgba(11, 13, 17, 0.82);
+      backdrop-filter: blur(2px);
+    }
+
+    #load-overlay.ss-hidden { display: none; }
+
+    .ss-spinner {
+      width: 30px;
+      height: 30px;
+      border: 2.5px solid var(--line);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: ss-spin 0.75s linear infinite;
+    }
+
+    @keyframes ss-spin { to { transform: rotate(360deg); } }
+
+    #load-msg {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-1);
+    }
+
+    /* ── Controls bar (below canvas) ───────────────────────────── */
+    #controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--bg-1);
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    /* ── Scrub row ─────────────────────────────────────────────── */
+    #scrub-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 14px 8px;
+      background: var(--bg-1);
+      border-top: 1px solid var(--line-soft);
+      flex-shrink: 0;
+    }
+
+    #scrub-label {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--text-2);
+      white-space: nowrap;
+      min-width: 100px;
+    }
+
+    #time-label {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--text-2);
+      white-space: nowrap;
+      min-width: 44px;
+      text-align: right;
+    }
+
+    /* Range input — custom cross-browser styling */
+    .ss-range {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 20px;
+      background: transparent;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .ss-range:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .ss-range::-webkit-slider-runnable-track {
+      height: 4px;
+      background: var(--line);
+      border-radius: 2px;
+    }
+
+    .ss-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      margin-top: -5px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      transition: background 0.12s, box-shadow 0.12s;
+    }
+
+    .ss-range:focus::-webkit-slider-thumb {
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .ss-range::-moz-range-track {
+      height: 4px;
+      background: var(--line);
+      border-radius: 2px;
+    }
+
+    .ss-range::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ── Settings pane (right sidebar) ────────────────────────── */
+    #settings-pane {
+      width: 272px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: var(--bg-1);
+      border-left: 1px solid var(--line);
+    }
+
+    .ss-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line-soft);
+      flex-shrink: 0;
+    }
+
+    .ss-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 12px;
+    }
+
+    .ss-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .ss-label {
+      font-size: 12px;
+      color: var(--text-1);
+      flex-shrink: 0;
+    }
+
+    .ss-value {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--text-0);
+    }
+
+    .ss-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-2);
+      margin-top: 4px;
+    }
+
+    /* ── FPS number input ──────────────────────────────────────── */
+    #fps-input {
+      width: 46px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      color: var(--text-0);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      padding: 5px 4px;
+      border-radius: 6px;
+      outline: none;
+      -moz-appearance: textfield;
+      transition: border-color 0.12s;
+    }
+
+    #fps-input:focus { border-color: var(--accent); }
+    #fps-input::-webkit-inner-spin-button,
+    #fps-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .fps-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fps-lbl {
+      font-size: 11.5px;
+      color: var(--text-2);
+      font-family: var(--mono);
+    }
+
+    /* ── Format toggle ─────────────────────────────────────────── */
+    .format-toggle {
+      display: flex;
+      gap: 3px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      padding: 3px;
+      border-radius: 7px;
+    }
+
+    .fmt-btn {
+      flex: 1;
+      padding: 5px 0;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      color: var(--text-1);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .fmt-btn.active {
+      background: var(--accent-dim);
+      color: #fff;
+    }
+
+    /* ── Export button ─────────────────────────────────────────── */
+    #export-btn-area {
+      padding: 14px 16px 12px;
+      flex-shrink: 0;
+    }
+
+    #export-btn {
+      width: 100%;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 14px;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Progress section ──────────────────────────────────────── */
+    #progress-section {
+      padding: 0 16px 14px;
+      flex-shrink: 0;
+      display: none;
+    }
+
+    #progress-section.ss-visible { display: block; }
+
+    .progress-track {
+      height: 6px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+      border-radius: 3px;
+      transition: width 0.12s linear;
+    }
+
+    #progress-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-2);
+    }
+
+    /* ── Loop button active state (override icon-btn) ──────────── */
+    #loop-btn.is-looping {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* ── Sequence pills ────────────────────────────────────────── */
+    .info-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* ── Statusbar: pulse animation while playing ──────────────── */
+    @keyframes ss-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    #sb-playing-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-right: 4px;
+      vertical-align: middle;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #sb-playing-dot.active {
+      opacity: 1;
+      animation: ss-pulse 1.2s ease-in-out infinite;
+    }
+
+    /* ── Responsive: stack below 800px ────────────────────────── */
+    @media (max-width: 800px) {
+      #main { flex-direction: column; }
+      #settings-pane {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--line);
+        max-height: 50vh;
+      }
+    }
+
+    @media (max-width: 560px) {
+      #controls-bar .hide-sm { display: none; }
+      #scrub-label { min-width: 70px; font-size: 10.5px; }
+    }
+
+    /* ── Reduced-motion: disable scanlines animation + pulse ───── */
+    @media (prefers-reduced-motion: reduce) {
+      .ss-spinner { animation: none; border-top-color: var(--accent); }
+      #sb-playing-dot.active { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TOP BAR
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="topbar">
+
+    <!-- Brand -->
+    <div class="brand">
+      <img src="SSLogo.png" alt="" srcset="" height="30px">
+    </div>
+
+    <div class="tb-divider"></div>
+
+    <!-- FPS control -->
+    <div class="toolbar-group fps-group" title="Playback & export frame rate (1–60)">
+      <span class="fps-lbl">FPS</span>
+      <input id="fps-input" type="number" min="1" max="60" value="24">
+    </div>
+
+    <div class="tb-spacer"></div>
+
+    <!-- Import button -->
+    <div class="toolbar-group">
+      <button class="tb-btn primary" id="import-btn">
+        <!-- Upload icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/>
+        </svg>
+        Import Frames
+      </button>
+    </div>
+
+    <!-- Hidden file input — triggered by Import button or dropzone click -->
+    <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.webp" multiple>
+
+  </div><!-- /topbar -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN CONTENT: preview pane + settings sidebar
+       ═══════════════════════════════════════════════════════════ -->
+  <main id="main">
+
+    <!-- ── Preview Pane ─────────────────────────────────────── -->
+    <section id="preview-pane">
+
+      <!-- Canvas area -->
+      <div id="canvas-wrap">
+
+        <!-- Drop zone — visible before any frames are loaded -->
+        <div id="dropzone">
+          <!-- Photo stack icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+          </svg>
+          <h3>Drop frames here</h3>
+          <p>PNG, JPG, or WEBP · Any count<br>Sorted by filename automatically</p>
+          <span class="dz-hint">or click to pick files</span>
+        </div>
+
+        <!-- Loading / validation overlay -->
+        <div id="load-overlay" class="ss-hidden">
+          <div class="ss-spinner"></div>
+          <span id="load-msg">Validating…</span>
+        </div>
+
+        <!-- Rendering canvas — sized to fill container in JS -->
+        <canvas id="preview-canvas" class="ss-hidden"></canvas>
+
+      </div><!-- /canvas-wrap -->
+
+      <!-- Playback controls -->
+      <div id="controls-bar">
+
+        <!-- Step to first frame -->
+        <button class="icon-btn" id="first-btn" title="First frame  [Home]" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5 11.25 12l7.5-7.5M12.75 19.5 5.25 12l7.5-7.5"/>
+          </svg>
+        </button>
+
+        <!-- Step back one frame -->
+        <button class="icon-btn" id="prev-btn" title="Previous frame  [←]" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+          </svg>
+        </button>
+
+        <!-- Play / Pause -->
+        <button class="tb-btn" id="play-btn" disabled>
+          <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69L9.54 5.98A1 1 0 0 0 8 6.82z"/>
+          </svg>
+          <span id="play-label">Play</span>
+        </button>
+
+        <!-- Step forward one frame -->
+        <button class="icon-btn" id="next-btn" title="Next frame  [→]" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+          </svg>
+        </button>
+
+        <!-- Step to last frame -->
+        <button class="icon-btn" id="last-btn" title="Last frame  [End]" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5M11.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </button>
+
+        <div class="tb-divider"></div>
+
+        <!-- Loop toggle -->
+        <button class="icon-btn is-looping" id="loop-btn" title="Toggle loop" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3"/>
+          </svg>
+        </button>
+
+      </div><!-- /controls-bar -->
+
+      <!-- Scrub / seek bar -->
+      <div id="scrub-row">
+        <span id="scrub-label">Frame 0 / 0</span>
+        <input type="range" id="scrub" class="ss-range" min="0" max="0" value="0" disabled>
+        <span id="time-label">0.00 s</span>
+      </div>
+
+    </section><!-- /preview-pane -->
+
+
+    <!-- ── Settings Sidebar ──────────────────────────────────── -->
+    <aside id="settings-pane">
+
+      <!-- Sequence summary -->
+      <div class="ss-section">
+        <div class="ss-section-title">Sequence</div>
+        <div class="info-pills">
+          <div class="stat-pill">
+            <div class="dot mod"></div>
+            <span id="info-frames">0 frames</span>
+          </div>
+          <div class="stat-pill">
+            <div class="dot add"></div>
+            <span id="info-res">—</span>
+          </div>
+          <div class="stat-pill">
+            <div class="dot del"></div>
+            <span id="info-dur">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Format selector -->
+      <div class="ss-section">
+        <div class="ss-section-title">Export Format</div>
+        <div class="format-toggle">
+          <button class="fmt-btn active" data-fmt="mp4">MP4</button>
+          <button class="fmt-btn"        data-fmt="gif">GIF</button>
+        </div>
+        <div class="ss-sub" id="fmt-desc" style="margin-top:8px;">
+          H.264 via WebCodecs · seekable, high quality
+        </div>
+      </div>
+
+      <!-- Export resolution -->
+      <div class="ss-section">
+        <div class="ss-section-title">Export Resolution</div>
+        <div class="ss-row">
+          <span class="ss-label">Scale</span>
+          <span class="ss-value" id="scale-pct-lbl">100%</span>
+        </div>
+        <input type="range" id="scale-slider" class="ss-range"
+               min="10" max="100" value="100" style="width:100%;margin-bottom:6px;">
+        <div class="ss-sub" id="export-dims-lbl">— × —</div>
+      </div>
+
+      <!-- Quality -->
+      <div class="ss-section">
+        <div class="ss-section-title">Quality</div>
+        <div class="ss-row">
+          <span class="ss-label" id="quality-main-lbl">Bitrate</span>
+          <span class="ss-value" id="quality-val-lbl">High</span>
+        </div>
+        <input type="range" id="quality-slider" class="ss-range"
+               min="1" max="100" value="75" style="width:100%;margin-bottom:6px;">
+        <div class="ss-sub" id="quality-hint-lbl">~8 Mbps</div>
+      </div>
+
+      <!-- Export action -->
+      <div id="export-btn-area">
+        <button class="tb-btn primary" id="export-btn" disabled>
+          <!-- Download icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+          </svg>
+          <span id="export-btn-label">Export MP4</span>
+        </button>
+      </div>
+
+      <!-- Progress (hidden until export starts) -->
+      <div id="progress-section">
+        <div class="progress-track">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="progress-text">Preparing…</div>
+      </div>
+
+    </aside><!-- /settings-pane -->
+
+  </main><!-- /main -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STATUS BAR
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="statusbar">
+    <div class="sb-item">
+      <span id="sb-playing-dot"></span>
+      <span id="sb-frames">No frames loaded</span>
+    </div>
+    <div class="tb-divider" style="height:13px;"></div>
+    <div class="sb-item"><span id="sb-res">—</span></div>
+    <div class="tb-divider" style="height:13px;"></div>
+    <div class="sb-item"><span id="sb-dur">—</span></div>
+    <div class="sb-spacer"></div>
+    <div class="sb-item">
+      <span style="color:var(--text-2)">Space · play/pause &nbsp;· &nbsp;← → · step frames</span>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TOAST — appended to body so it floats above everything
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="toast">
+  <svg id="toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none"
+       viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+  </svg>
+  <span id="toast-msg"></span>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     APPLICATION SCRIPT
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ──────────────────────────────────────────────────────────────────
+//  DOM References
+// ──────────────────────────────────────────────────────────────────
+const canvas       = document.getElementById('preview-canvas');
+const ctx          = canvas.getContext('2d');
+const canvasWrap   = document.getElementById('canvas-wrap');
+const dropzone     = document.getElementById('dropzone');
+const loadOverlay  = document.getElementById('load-overlay');
+const loadMsg      = document.getElementById('load-msg');
+const fileInput    = document.getElementById('file-input');
+const importBtn    = document.getElementById('import-btn');
+const fpsInput     = document.getElementById('fps-input');
+const playBtn      = document.getElementById('play-btn');
+const playLabel    = document.getElementById('play-label');
+const playIcon     = document.getElementById('play-icon');
+const loopBtn      = document.getElementById('loop-btn');
+const firstBtn     = document.getElementById('first-btn');
+const prevBtn      = document.getElementById('prev-btn');
+const nextBtn      = document.getElementById('next-btn');
+const lastBtn      = document.getElementById('last-btn');
+const scrub        = document.getElementById('scrub');
+const scrubLabel   = document.getElementById('scrub-label');
+const timeLabel    = document.getElementById('time-label');
+const exportBtn    = document.getElementById('export-btn');
+const exportBtnLbl = document.getElementById('export-btn-label');
+const scaleSlider  = document.getElementById('scale-slider');
+const scalePctLbl  = document.getElementById('scale-pct-lbl');
+const exportDimsLbl = document.getElementById('export-dims-lbl');
+const qualSlider   = document.getElementById('quality-slider');
+const qualValLbl   = document.getElementById('quality-val-lbl');
+const qualMainLbl  = document.getElementById('quality-main-lbl');
+const qualHintLbl  = document.getElementById('quality-hint-lbl');
+const fmtDesc      = document.getElementById('fmt-desc');
+const infoFrames   = document.getElementById('info-frames');
+const infoRes      = document.getElementById('info-res');
+const infoDur      = document.getElementById('info-dur');
+const sbFrames     = document.getElementById('sb-frames');
+const sbRes        = document.getElementById('sb-res');
+const sbDur        = document.getElementById('sb-dur');
+const sbDot        = document.getElementById('sb-playing-dot');
+const progressSec  = document.getElementById('progress-section');
+const progressFill = document.getElementById('progress-fill');
+const progressText = document.getElementById('progress-text');
+const toastEl      = document.getElementById('toast');
+const toastIcon    = document.getElementById('toast-icon');
+const toastMsg     = document.getElementById('toast-msg');
+const fmtBtns      = document.querySelectorAll('.fmt-btn');
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Application State
+// ──────────────────────────────────────────────────────────────────
+let files       = [];      // File[] — sorted source files
+let sourceW     = 0;       // Source image width  (px)
+let sourceH     = 0;       // Source image height (px)
+let frameIdx    = 0;       // Current frame index (0-based)
+let isPlaying   = false;
+let isLooping   = true;
+let fps         = 24;
+let exportScale = 100;     // Percent (10–100)
+let quality     = 75;      // Quality slider (1–100)
+let exportFmt   = 'mp4';   // 'mp4' | 'gif'
+let isExporting = false;
+
+// RAF / frame timing
+let rafId       = null;
+let lastTick    = 0;
+let frameAccum  = 0;       // accumulated ms toward next frame
+
+
+// ──────────────────────────────────────────────────────────────────
+//  FrameCache — LRU ImageBitmap pool
+//  ──────────────────────────────────────────────────────────────
+//  ImageBitmaps are decoded GPU-friendly pixel buffers.
+//  We cap the pool to a memory budget and evict the least-recently-used
+//  entry when the budget is full, explicitly calling .close() to free
+//  GPU memory rather than relying on GC timing.
+// ──────────────────────────────────────────────────────────────────
+class FrameCache {
+  constructor(maxSize = 24) {
+    this.maxSize = maxSize;
+    /** @type {Map<number, { bmp: ImageBitmap, lru: number }>} */
+    this.cache   = new Map();
+    /** @type {Map<number, Promise<ImageBitmap>>} */
+    this.pending = new Map();
+    this.clock   = 0;
+  }
+
+  /**
+   * Resolve the ImageBitmap for frame at `index`.
+   * Returns a cached entry immediately if available,
+   * otherwise decodes the source File and caches the result.
+   * @param {number} index
+   * @returns {Promise<ImageBitmap>}
+   */
+  get(index) {
+    if (this.cache.has(index)) {
+      const entry = this.cache.get(index);
+      entry.lru = ++this.clock;
+      return Promise.resolve(entry.bmp);
+    }
+    if (this.pending.has(index)) {
+      return this.pending.get(index);
+    }
+
+    const promise = createImageBitmap(files[index], {
+      // Hint the browser we want RGBA — avoids implicit re-decode on draw
+      premultiplyAlpha: 'premultiply',
+      colorSpaceConversion: 'none',
+    }).then(bmp => {
+      this.pending.delete(index);
+      if (this.cache.size >= this.maxSize) this._evict();
+      this.cache.set(index, { bmp, lru: ++this.clock });
+      return bmp;
+    });
+
+    this.pending.set(index, promise);
+    return promise;
+  }
+
+  /**
+   * Fire-and-forget pre-fetch: start decoding upcoming frames
+   * so they're ready before the playback loop needs them.
+   * @param {number[]} indices
+   */
+  prefetch(indices) {
+    for (const i of indices) {
+      if (i >= 0 && i < files.length && !this.cache.has(i) && !this.pending.has(i)) {
+        this.get(i).catch(() => {}); // ignore prefetch errors silently
+      }
+    }
+  }
+
+  /** Evict the least-recently-used entry and release its GPU memory. */
+  _evict() {
+    let minLRU = Infinity, minKey = -1;
+    for (const [k, v] of this.cache) {
+      if (v.lru < minLRU) { minLRU = v.lru; minKey = k; }
+    }
+    if (minKey >= 0) {
+      this.cache.get(minKey).bmp.close();
+      this.cache.delete(minKey);
+    }
+  }
+
+  /** Resize the pool (evicts if already over the new limit). */
+  resize(newMax) {
+    this.maxSize = newMax;
+    while (this.cache.size > this.maxSize) this._evict();
+  }
+
+  /** Release all cached bitmaps and cancel pending decodes. */
+  clear() {
+    for (const [, v] of this.cache) v.bmp.close();
+    this.cache.clear();
+    this.pending.clear();
+    this.clock = 0;
+  }
+}
+
+const frameCache = new FrameCache(24);
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Natural Sort
+//  Uses Intl.Collator with numeric:true so that:
+//    frame_2.png < frame_10.png < frame_100.png
+//  without the classical "1, 10, 100, 2" lexicographic mistake.
+// ──────────────────────────────────────────────────────────────────
+const naturalCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+/** Sort a FileList / File[] by filename with natural ordering. */
+function naturalSort(fileList) {
+  return [...fileList].sort((a, b) => naturalCollator.compare(a.name, b.name));
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  File Ingestion Pipeline
+// ──────────────────────────────────────────────────────────────────
+
+/** Returns true if the file has an accepted image extension. */
+function isAcceptedImage(file) {
+  return /\.(png|jpe?g|webp)$/i.test(file.name);
+}
+
+/**
+ * Decode just enough of a file to obtain its pixel dimensions.
+ * createImageBitmap decodes the full image, but we immediately
+ * close it — the bitmap is never drawn, so peak VRAM stays low.
+ * @param {File} file
+ * @returns {Promise<{w:number, h:number}>}
+ */
+async function getImageDimensions(file) {
+  const bmp = await createImageBitmap(file);
+  const dims = { w: bmp.width, h: bmp.height };
+  bmp.close(); // free GPU memory immediately
+  return dims;
+}
+
+/**
+ * Main ingestion pipeline:
+ *  1. Filter to accepted image types
+ *  2. Natural-sort by filename
+ *  3. Check reference resolution from first frame
+ *  4. Validate all subsequent frames match that resolution
+ *  5. Commit and activate player
+ *
+ * Validation is sequential (not concurrent) to bound peak memory
+ * usage on large sequences — a 200-frame 4K sequence would otherwise
+ * try to decompress 200 images simultaneously.
+ *
+ * @param {FileList|File[]} rawList
+ */
+async function ingestFiles(rawList) {
+  const valid = [...rawList].filter(isAcceptedImage);
+  if (valid.length === 0) {
+    showToast('No valid image files found (PNG, JPG, WEBP).', 'error');
+    return;
+  }
+
+  const sorted = naturalSort(valid);
+
+  // Show loading overlay
+  setLoadOverlay(true, `Validating 0 / ${sorted.length}…`);
+
+  // ── Step 1: reference resolution from first file ──────────────
+  let refDims;
+  try {
+    refDims = await getImageDimensions(sorted[0]);
+  } catch (e) {
+    setLoadOverlay(false);
+    showToast(`Cannot read "${sorted[0].name}": ${e.message}`, 'error');
+    return;
+  }
+
+  // ── Step 2: validate all remaining files ──────────────────────
+  for (let i = 1; i < sorted.length; i++) {
+    // Update overlay text periodically
+    if (i % 10 === 0 || i === sorted.length - 1) {
+      setLoadOverlay(true, `Validating ${i + 1} / ${sorted.length}…`);
+      await yieldToMain(); // keep UI responsive
+    }
+
+    let dims;
+    try {
+      dims = await getImageDimensions(sorted[i]);
+    } catch (e) {
+      setLoadOverlay(false);
+      showToast(`Cannot read "${sorted[i].name}": ${e.message}`, 'error');
+      return;
+    }
+
+    if (dims.w !== refDims.w || dims.h !== refDims.h) {
+      setLoadOverlay(false);
+      showToast(
+        `Resolution mismatch: "${sorted[i].name}" is ${dims.w}×${dims.h} ` +
+        `— expected ${refDims.w}×${refDims.h} (same as frame 1).`,
+        'error'
+      );
+      return;
+    }
+  }
+
+  // ── Step 3: commit state ──────────────────────────────────────
+  pause();
+  frameCache.clear();
+  files   = sorted;
+  sourceW = refDims.w;
+  sourceH = refDims.h;
+  frameIdx = 0;
+
+  // Tune cache size to available memory: aim for ~300 MB headroom.
+  // A decoded RGBA frame = width × height × 4 bytes.
+  const bytesPerFrame    = sourceW * sourceH * 4;
+  const budgetBytes      = 300 * 1024 * 1024;
+  const calculatedMax    = Math.floor(budgetBytes / Math.max(1, bytesPerFrame));
+  frameCache.resize(Math.max(8, Math.min(64, calculatedMax)));
+
+  // ── Step 4: activate UI ───────────────────────────────────────
+  setLoadOverlay(false);
+  activatePlayer();
+  await renderFrame(0);
+
+  // Pre-warm the cache with the first few frames
+  frameCache.prefetch([1, 2, 3, 4, 5, 6, 7]);
+
+  showToast(`Loaded ${files.length} frame${files.length !== 1 ? 's' : ''} · ${sourceW}×${sourceH}`);
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Player Activation
+// ──────────────────────────────────────────────────────────────────
+function activatePlayer() {
+  // Swap visibility: hide dropzone, show canvas
+  dropzone.classList.add('ss-hidden');
+  canvas.classList.remove('ss-hidden');
+
+  // Sync canvas pixel buffer to container size
+  resizeCanvas();
+
+  // Enable all controls
+  [playBtn, loopBtn, firstBtn, prevBtn, nextBtn, lastBtn, exportBtn].forEach(b => {
+    b.disabled = false;
+  });
+  scrub.disabled = false;
+  scrub.max   = files.length - 1;
+  scrub.value = 0;
+
+  updateInfoPanel();
+  updateScrubUI();
+  startRAF();
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Canvas Resize — keep pixel buffer synced to CSS layout size
+// ──────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const w = canvasWrap.clientWidth;
+  const h = canvasWrap.clientHeight;
+  if (w === 0 || h === 0) return;
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width  = w;
+    canvas.height = h;
+    if (files.length > 0) renderFrame(frameIdx);
+  }
+}
+
+new ResizeObserver(resizeCanvas).observe(canvasWrap);
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Frame Rendering
+// ──────────────────────────────────────────────────────────────────
+
+/**
+ * Draw the frame at `index` to the preview canvas.
+ * This is fire-and-forget — if the bitmap is already cached it
+ * resolves synchronously on the microtask queue, otherwise the
+ * canvas shows the previous frame while the new one decodes.
+ * @param {number} index
+ */
+function renderFrame(index) {
+  if (index < 0 || index >= files.length) return;
+  return frameCache.get(index).then(bmp => {
+    drawBitmapLetterboxed(bmp);
+  }).catch(e => {
+    console.warn(`renderFrame(${index}) failed:`, e);
+  });
+}
+
+/**
+ * Draw a bitmap to fill the canvas with letterbox/pillarbox padding.
+ * Padding areas are filled with --bg-0 to match the shell background.
+ * @param {ImageBitmap} bmp
+ */
+function drawBitmapLetterboxed(bmp) {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const scale = Math.min(cw / bmp.width, ch / bmp.height);
+  const dw = Math.round(bmp.width  * scale);
+  const dh = Math.round(bmp.height * scale);
+  const dx = Math.round((cw - dw) / 2);
+  const dy = Math.round((ch - dh) / 2);
+
+  // Dark background behind letterboxed areas
+  ctx.fillStyle = '#0b0d11'; // --bg-0
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(bmp, dx, dy, dw, dh);
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Playback Loop — requestAnimationFrame + delta-time accumulator
+//
+//  We accumulate wall-clock milliseconds and step frames only when
+//  enough time has passed for one frame at the target FPS.
+//  Capping the delta prevents the "spiral of death" on visibility
+//  changes (tab regains focus after being backgrounded).
+// ──────────────────────────────────────────────────────────────────
+function startRAF() {
+  if (rafId) return;
+  lastTick   = performance.now();
+  frameAccum = 0;
+  rafId      = requestAnimationFrame(tick);
+}
+
+function stopRAF() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+}
+
+function tick(timestamp) {
+  rafId = requestAnimationFrame(tick);
+  if (!isPlaying || files.length === 0) return;
+
+  const delta = timestamp - lastTick;
+  lastTick    = timestamp;
+
+  // Cap to 200 ms so a backgrounded tab doesn't burst-advance on return
+  frameAccum += Math.min(delta, 200);
+
+  const frameDuration = 1000 / fps;
+  if (frameAccum >= frameDuration) {
+    frameAccum -= frameDuration;
+    // If wildly behind (e.g. two frames of lag), reset — don't try to catch up
+    if (frameAccum > frameDuration * 2) frameAccum = 0;
+    stepFrame(1);
+  }
+}
+
+/**
+ * Advance (or rewind) by `delta` frames, respecting loop/clamp logic.
+ * @param {number} delta  Signed integer frame offset
+ */
+function stepFrame(delta) {
+  if (files.length === 0) return;
+
+  let next = frameIdx + delta;
+
+  if (next >= files.length) {
+    if (isLooping) {
+      next = next % files.length;
+    } else {
+      next = files.length - 1;
+      pause();
+    }
+  } else if (next < 0) {
+    if (isLooping) {
+      next = ((next % files.length) + files.length) % files.length;
+    } else {
+      next = 0;
+    }
+  }
+
+  frameIdx = next;
+  renderFrame(frameIdx);
+  updateScrubUI();
+
+  // Pre-warm the next N frames based on FPS so they're hot in cache
+  const lookahead = Math.min(12, Math.ceil(fps));
+  const upcoming  = [];
+  for (let i = 1; i <= lookahead; i++) {
+    upcoming.push((frameIdx + i) % files.length);
+  }
+  frameCache.prefetch(upcoming);
+}
+
+function play() {
+  if (files.length === 0) return;
+  isPlaying  = true;
+  lastTick   = performance.now();
+  frameAccum = 0;
+  sbDot.classList.add('active');
+  updatePlayBtn();
+  startRAF();
+}
+
+function pause() {
+  isPlaying = false;
+  sbDot.classList.remove('active');
+  updatePlayBtn();
+}
+
+function togglePlay() {
+  isPlaying ? pause() : play();
+}
+
+function updatePlayBtn() {
+  if (isPlaying) {
+    playLabel.textContent = 'Pause';
+    playIcon.innerHTML = `
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+  } else {
+    playLabel.textContent = 'Play';
+    playIcon.innerHTML = `
+      <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69L9.54 5.98A1 1 0 0 0 8 6.82z"/>`;
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  UI State Updates
+// ──────────────────────────────────────────────────────────────────
+function updateScrubUI() {
+  scrub.value = frameIdx;
+  const n = frameIdx + 1;
+  const t = (frameIdx / fps).toFixed(2);
+  scrubLabel.textContent = `Frame ${n} / ${files.length}`;
+  timeLabel.textContent  = `${t} s`;
+}
+
+function updateInfoPanel() {
+  const count = files.length;
+  const dur   = (count / fps).toFixed(1);
+
+  infoFrames.textContent = `${count} frame${count !== 1 ? 's' : ''}`;
+  infoRes.textContent    = `${sourceW}×${sourceH}`;
+  infoDur.textContent    = `${dur}s @ ${fps}fps`;
+  sbFrames.textContent   = `${count} frames`;
+  sbRes.textContent      = `${sourceW}×${sourceH}`;
+  sbDur.textContent      = `${dur}s @ ${fps}fps`;
+
+  updateExportDimsLabel();
+}
+
+function updateExportDimsLabel() {
+  if (!sourceW) { exportDimsLbl.textContent = '— × —'; return; }
+  const scale = exportScale / 100;
+  const w = makeEven(Math.round(sourceW * scale));
+  const h = makeEven(Math.round(sourceH * scale));
+  exportDimsLbl.textContent = `${w} × ${h} px`;
+}
+
+function updateQualityUI() {
+  const q = quality;
+  qualValLbl.textContent = q < 30 ? 'Low' : q < 60 ? 'Medium' : q < 90 ? 'High' : 'Max';
+  if (exportFmt === 'mp4') {
+    qualMainLbl.textContent = 'Bitrate';
+    qualHintLbl.textContent = `~${(qualityToBitrate(q) / 1_000_000).toFixed(0)} Mbps`;
+  } else {
+    qualMainLbl.textContent = 'Dither';
+    qualHintLbl.textContent = `GIF quality level ${qualityToGifQ(q)} (1 = best)`;
+  }
+}
+
+// Utility: ensure H.264 width/height are even (codec requirement)
+function makeEven(n) { return n % 2 === 0 ? n : n - 1; }
+
+/**
+ * Map quality slider (1–100) → H.264 bitrate in bps.
+ * Exponential scale: 500 Kbps at q=1, 50 Mbps at q=100.
+ */
+function qualityToBitrate(q) {
+  const lo = 500_000, hi = 50_000_000;
+  return Math.round(lo * Math.pow(hi / lo, (q - 1) / 99));
+}
+
+/**
+ * Map quality slider (1–100) → gifshot quality int (20=worst, 1=best).
+ */
+function qualityToGifQ(q) {
+  return Math.max(1, Math.round(20 - (q - 1) * 19 / 99));
+}
+
+// ──────────────────────────────────────────────────────────────────
+//  Export Fallback — Native MediaRecorder
+//  Used if the external CDN fails to load or the user is offline.
+// ──────────────────────────────────────────────────────────────────
+async function exportNativeVideo() {
+  const scale = exportScale / 100;
+  const exportW = makeEven(Math.round(sourceW * scale));
+  const exportH = makeEven(Math.round(sourceH * scale));
+
+  startExport();
+
+  try {
+    // Standard DOM Canvas is required for .captureStream()
+    const renderCanvas = document.createElement('canvas');
+    renderCanvas.width = exportW;
+    renderCanvas.height = exportH;
+    const ctx = renderCanvas.getContext('2d');
+
+    // captureStream(0) allows us to manually push frames to the track
+    const stream = renderCanvas.captureStream(0); 
+    const track = stream.getVideoTracks()[0];
+
+    // Find the best native format supported by the user's browser
+    const supportedTypes = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm',
+      'video/mp4' // Safari supports native MP4 via MediaRecorder
+    ];
+    const mimeType = supportedTypes.find(t => MediaRecorder.isTypeSupported(t)) || '';
+
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: qualityToBitrate(quality)
+    });
+
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    
+    const recordingPromise = new Promise((resolve, reject) => {
+      recorder.onstop = resolve;
+      recorder.onerror = reject;
+    });
+
+    recorder.start();
+
+    // MediaRecorder operates in real-world time.
+    // We must physically pause our loop for the duration of each frame.
+    const frameDelayMs = 1000 / fps;
+
+    for (let i = 0; i < files.length; i++) {
+      if (!isExporting) {
+        recorder.stop();
+        return; 
+      }
+
+      setProgress(i / files.length, `Recording fallback video: frame ${i + 1}/${files.length}…`);
+
+      const bmp = await frameCache.get(i);
+      ctx.drawImage(bmp, 0, 0, exportW, exportH);
+      
+      // Force the stream to grab this exact frame
+      if (track.requestFrame) track.requestFrame();
+
+      // Pause execution for the exact duration of the frame 
+      await new Promise(r => setTimeout(r, frameDelayMs));
+    }
+
+    recorder.stop();
+    await recordingPromise;
+
+    const blob = new Blob(chunks, { type: mimeType });
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const sizeMB = (blob.size / 1_048_576).toFixed(1);
+    
+    downloadBlob(blob, `sequence.${ext}`);
+    showToast(`Native Video exported · ${files.length} frames · ${sizeMB} MB`);
+
+  } catch (e) {
+    showToast(`Fallback export failed: ${e.message}`, 'error');
+    console.error('[SequenceSpin] Native export error:', e);
+  } finally {
+    finishExport();
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
+//  Export — MP4 via WebCodecs + mp4-muxer
+//
+//  Architecture:
+//   • OffscreenCanvas at export resolution — frames composited here
+//   • VideoEncoder configured with H.264 Main Profile L5.0
+//   • Each VideoFrame handed to the encoder; key-frames every 2 s
+//   • mp4-muxer streams EncodedVideoChunks into an in-memory buffer
+//   • On flush + finalize, we download the buffer as a .mp4 Blob
+// ──────────────────────────────────────────────────────────────────
+async function exportMP4() {
+  // Guard: WebCodecs availability
+  if (typeof VideoEncoder === 'undefined') {
+    showToast('WebCodecs not supported. Trying native fallback...', 'info');
+    return exportNativeVideo();
+  }
+
+  // Safely resolve the library regardless of UMD naming/casing quirks
+  const MuxerLib = window.Mp4Muxer || window.mp4Muxer;
+
+  // If ALL script fallbacks failed (e.g. offline), trigger native fallback
+  if (!MuxerLib) {
+    showToast('MP4 library blocked by network. Using native fallback...', 'info');
+    return exportNativeVideo();
+  }
+
+  const scale       = exportScale / 100;
+  const exportW     = makeEven(Math.round(sourceW * scale));
+  const exportH     = makeEven(Math.round(sourceH * scale));
+  const bitrate     = qualityToBitrate(quality);
+  const frameDurUs  = 1_000_000 / fps; // frame duration in microseconds
+
+  const codecStr = 'avc1.4d0032'; 
+  let supported;
+  
+  try {
+    const check = await VideoEncoder.isConfigSupported({
+      codec: codecStr, width: exportW, height: exportH, bitrate,
+    });
+    supported = check.supported;
+  } catch (e) {
+    showToast(`Codec check failed: ${e.message}`, 'error');
+    return;
+  }
+  
+  if (!supported) {
+    showToast('H.264 encoding not supported by this browser. Trying fallback...', 'info');
+    return exportNativeVideo();
+  }
+
+  startExport();
+
+  try {
+    // Destructure from our safely resolved MuxerLib variable
+    const { Muxer, ArrayBufferTarget } = MuxerLib; 
+
+    // ArrayBufferTarget buffers the full file in RAM — fine for typical sequences
+    const target = new ArrayBufferTarget();
+    const muxer  = new Muxer({
+      target,
+      video: { codec: 'avc', width: exportW, height: exportH },
+      fastStart: 'in-memory', // prepend MOOV atom for web-playback compatibility
+    });
+
+    const encoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: (e) => { throw e; },
+    });
+
+    encoder.configure({
+      codec:       codecStr,
+      width:       exportW,
+      height:      exportH,
+      bitrate,
+      framerate:   fps,
+      latencyMode: 'quality',
+    });
+
+    // Off-screen canvas for scaling frames to export resolution
+    const offscreen = new OffscreenCanvas(exportW, exportH);
+    const offCtx    = offscreen.getContext('2d');
+
+    // Key-frame every 2 seconds (or every frame if FPS < 2)
+    const keyFrameInterval = Math.max(1, Math.round(fps * 2));
+
+    for (let i = 0; i < files.length; i++) {
+      if (!isExporting) break; // cancelled via finishExport
+
+      setProgress(i / files.length, `Encoding frame ${i + 1} of ${files.length}…`);
+
+      // Decode source frame (cache hit for pre-warmed frames)
+      const bmp = await frameCache.get(i);
+      offCtx.drawImage(bmp, 0, 0, exportW, exportH);
+
+      const timestamp  = Math.round(i * frameDurUs);
+      const duration   = Math.round(frameDurUs);
+      const videoFrame = new VideoFrame(offscreen, { timestamp, duration });
+      const keyFrame   = (i % keyFrameInterval) === 0;
+
+      encoder.encode(videoFrame, { keyFrame });
+      videoFrame.close(); // return to pool immediately
+
+      // Yield every 4 frames to drain the microtask queue and keep UI alive
+      if (i % 4 === 0) await yieldToMain();
+    }
+
+    await encoder.flush();
+    muxer.finalize();
+
+    const { buffer }  = target;
+    const sizeMB      = (buffer.byteLength / 1_048_576).toFixed(1);
+    downloadBlob(new Blob([buffer], { type: 'video/mp4' }), 'sequence.mp4');
+    showToast(`MP4 exported · ${files.length} frames · ${sizeMB} MB`);
+
+  } catch (e) {
+    showToast(`MP4 export failed: ${e.message}`, 'error');
+    console.error('[SequenceSpin] MP4 export error:', e);
+  } finally {
+    finishExport();
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
+//  Export — Animated GIF via gifshot
+//
+//  Architecture:
+//   • Phase 1: decode every frame into a JPEG data-URL at export size
+//     (gifshot requires image URLs/data-URLs as input)
+//   • Phase 2: gifshot runs its GIF encoder in Web Workers
+//   • Download the resulting data-URL as a Blob
+//
+//  Memory note: for very large / high-res sequences the data-URL array
+//  can be substantial. Consider lower scale % for long GIF exports.
+// ──────────────────────────────────────────────────────────────────
+async function exportGIF() {
+  if (typeof gifshot === 'undefined') {
+    showToast('gifshot library failed to load. Check your network and reload.', 'error');
+    return;
+  }
+
+  const exportW = Math.round(sourceW * (exportScale / 100));
+  const exportH = Math.round(sourceH * (exportScale / 100));
+
+  startExport();
+
+  try {
+    // Phase 1: build JPEG data-URL array
+    const offscreen = document.createElement('canvas');
+    offscreen.width  = exportW;
+    offscreen.height = exportH;
+    const offCtx = offscreen.getContext('2d');
+    const dataURLs = [];
+
+    for (let i = 0; i < files.length; i++) {
+      if (!isExporting) break;
+      // Phase 1 is first half of the progress bar
+      setProgress(i / (files.length * 2), `Compositing frame ${i + 1} of ${files.length}…`);
+      const bmp = await frameCache.get(i);
+      offCtx.drawImage(bmp, 0, 0, exportW, exportH);
+      // JPEG at ~88% quality — good balance between size and fidelity
+      dataURLs.push(offscreen.toDataURL('image/jpeg', 0.88));
+      if (i % 6 === 0) await yieldToMain();
+    }
+
+    if (!isExporting) { finishExport(); return; }
+
+    // Phase 2: GIF encoding (runs in gifshot's Web Workers)
+    setProgress(0.5, 'Encoding GIF — this may take a moment…');
+
+    await new Promise((resolve, reject) => {
+      gifshot.createGIF({
+        images:           dataURLs,
+        gifWidth:         exportW,
+        gifHeight:        exportH,
+        interval:         1 / fps,
+        numWorkers:       Math.min(4, navigator.hardwareConcurrency || 2),
+        quality:          qualityToGifQ(quality),
+        progressCallback: (progress) => {
+          // Map gifshot's 0–1 progress to the second half of our bar (0.5–1.0)
+          setProgress(0.5 + progress * 0.5, `Encoding GIF: ${Math.round(progress * 100)}%`);
+        },
+      }, (obj) => {
+        if (obj.error) {
+          reject(new Error(obj.errorMsg || 'gifshot encoding failed'));
+        } else {
+          downloadBlob(dataURLToBlob(obj.image), 'sequence.gif');
+          showToast(`GIF exported · ${files.length} frames`);
+          resolve();
+        }
+      });
+    });
+
+  } catch (e) {
+    showToast(`GIF export failed: ${e.message}`, 'error');
+    console.error('[SequenceSpin] GIF export error:', e);
+  } finally {
+    finishExport();
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Export Lifecycle Helpers
+// ──────────────────────────────────────────────────────────────────
+function startExport() {
+  isExporting = true;
+  pause();
+  lockUI(true);
+  progressSec.classList.add('ss-visible');
+  canvasWrap.classList.add('scanlines-off'); // remove scanline overlay during export UX
+  setProgress(0, 'Preparing…');
+}
+
+function finishExport() {
+  isExporting = false;
+  lockUI(false);
+  canvasWrap.classList.remove('scanlines-off');
+  setTimeout(() => progressSec.classList.remove('ss-visible'), 2500);
+}
+
+/** Disable or re-enable all interactive controls during export. */
+function lockUI(locked) {
+  const controls = [
+    importBtn, playBtn, loopBtn, firstBtn, prevBtn, nextBtn, lastBtn,
+    exportBtn, scrub, scaleSlider, qualSlider, fpsInput, ...fmtBtns,
+  ];
+  controls.forEach(el => { el.disabled = locked; });
+}
+
+function setProgress(fraction, msg) {
+  const pct = Math.round(Math.max(0, Math.min(1, fraction)) * 100);
+  progressFill.style.width = pct + '%';
+  progressText.textContent  = msg || `${pct}%`;
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Download Helpers
+// ──────────────────────────────────────────────────────────────────
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = Object.assign(document.createElement('a'), {
+    href: url, download: filename,
+  });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 15_000);
+}
+
+/** Convert a data-URL (from gifshot) to a Blob for download. */
+function dataURLToBlob(dataURL) {
+  const [header, b64] = dataURL.split(',');
+  const mime          = header.match(/:(.*?);/)[1];
+  const raw           = atob(b64);
+  const arr           = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+/** Minimal cooperative yield — lets the browser paint and handle events. */
+function yieldToMain() {
+  return new Promise(r => setTimeout(r, 0));
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Toast Notifications
+// ──────────────────────────────────────────────────────────────────
+const TOAST_ICONS = {
+  success: `<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>`,
+  error:   `<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>`,
+  info:    `<path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/>`,
+};
+
+let toastTimer = null;
+
+/**
+ * Show a toast notification.
+ * @param {string} msg
+ * @param {'success'|'error'|'info'} type
+ */
+function showToast(msg, type = 'success') {
+  toastIcon.style.color = type === 'error' ? 'var(--del-text)' : 'var(--accent)';
+  toastIcon.innerHTML   = TOAST_ICONS[type] || TOAST_ICONS.success;
+  toastMsg.textContent  = msg;
+  toastEl.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(
+    () => toastEl.classList.remove('show'),
+    type === 'error' ? 6000 : 3000
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Loading Overlay
+// ──────────────────────────────────────────────────────────────────
+function setLoadOverlay(visible, msg = '') {
+  if (visible) {
+    loadMsg.textContent = msg;
+    loadOverlay.classList.remove('ss-hidden');
+  } else {
+    loadOverlay.classList.add('ss-hidden');
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Event Listeners
+// ──────────────────────────────────────────────────────────────────
+
+// ── File import ─────────────────────────────────────────────────
+importBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length > 0) ingestFiles(e.target.files);
+  fileInput.value = ''; // reset so the same files can be re-selected
+});
+
+// ── Drag and drop (target: the whole canvas-wrap area) ──────────
+canvasWrap.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropzone.classList.add('drag-active');
+});
+canvasWrap.addEventListener('dragleave', e => {
+  // Only fire if leaving the wrap itself, not a child
+  if (!canvasWrap.contains(e.relatedTarget)) {
+    dropzone.classList.remove('drag-active');
+  }
+});
+canvasWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-active');
+  if (e.dataTransfer.files.length > 0) ingestFiles(e.dataTransfer.files);
+});
+
+// Clicking the dropzone also opens the file picker
+dropzone.addEventListener('click', () => fileInput.click());
+
+// ── Playback controls ────────────────────────────────────────────
+playBtn.addEventListener('click', togglePlay);
+
+loopBtn.addEventListener('click', () => {
+  isLooping = !isLooping;
+  loopBtn.classList.toggle('is-looping', isLooping);
+});
+
+firstBtn.addEventListener('click', () => {
+  pause();
+  frameIdx = 0;
+  renderFrame(0);
+  updateScrubUI();
+});
+
+lastBtn.addEventListener('click', () => {
+  pause();
+  frameIdx = files.length - 1;
+  renderFrame(frameIdx);
+  updateScrubUI();
+});
+
+prevBtn.addEventListener('click', () => { pause(); stepFrame(-1); });
+nextBtn.addEventListener('click', () => { pause(); stepFrame(+1); });
+
+// ── Scrub bar ────────────────────────────────────────────────────
+scrub.addEventListener('mousedown',  () => pause());
+scrub.addEventListener('touchstart', () => pause(), { passive: true });
+scrub.addEventListener('input', () => {
+  frameIdx = parseInt(scrub.value, 10);
+  renderFrame(frameIdx);
+  updateScrubUI();
+  // Pre-warm bidirectionally when scrubbing
+  frameCache.prefetch([frameIdx - 1, frameIdx + 1, frameIdx + 2, frameIdx + 3]);
+});
+
+// ── FPS ──────────────────────────────────────────────────────────
+fpsInput.addEventListener('change', () => {
+  fps = Math.max(1, Math.min(60, parseInt(fpsInput.value, 10) || 24));
+  fpsInput.value = fps;
+  updateInfoPanel();
+  updateQualityUI();
+});
+
+// ── Scale slider ─────────────────────────────────────────────────
+scaleSlider.addEventListener('input', () => {
+  exportScale = parseInt(scaleSlider.value, 10);
+  scalePctLbl.textContent = exportScale + '%';
+  updateExportDimsLabel();
+});
+
+// ── Quality slider ───────────────────────────────────────────────
+qualSlider.addEventListener('input', () => {
+  quality = parseInt(qualSlider.value, 10);
+  updateQualityUI();
+});
+
+// ── Format toggle ────────────────────────────────────────────────
+fmtBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    fmtBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    exportFmt = btn.dataset.fmt;
+
+    exportBtnLbl.textContent = `Export ${exportFmt.toUpperCase()}`;
+    fmtDesc.textContent = exportFmt === 'mp4'
+      ? 'H.264 via WebCodecs · seekable, high quality'
+      : 'Animated GIF · universal browser & social support';
+
+    updateQualityUI();
+  });
+});
+
+// ── Export ───────────────────────────────────────────────────────
+exportBtn.addEventListener('click', () => {
+  if (isExporting || files.length === 0) return;
+  exportFmt === 'mp4' ? exportMP4() : exportGIF();
+});
+
+// ── Keyboard shortcuts ───────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Don't intercept when typing in any input
+  if (e.target.tagName === 'INPUT') return;
+
+  switch (e.key) {
+    case ' ':
+      e.preventDefault();
+      togglePlay();
+      break;
+    case 'ArrowLeft':
+      e.preventDefault();
+      pause();
+      stepFrame(-1);
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      pause();
+      stepFrame(+1);
+      break;
+    case 'Home':
+      e.preventDefault();
+      pause();
+      frameIdx = 0;
+      renderFrame(0);
+      updateScrubUI();
+      break;
+    case 'End':
+      e.preventDefault();
+      pause();
+      frameIdx = files.length - 1;
+      renderFrame(frameIdx);
+      updateScrubUI();
+      break;
+    case 'l':
+    case 'L':
+      loopBtn.click();
+      break;
+  }
+});
+
+
+// ──────────────────────────────────────────────────────────────────
+//  Initial UI Setup
+// ──────────────────────────────────────────────────────────────────
+
+// Ensure loop button starts in active (looping) state
+loopBtn.classList.add('is-looping');
+
+// Render initial quality hint
+updateQualityUI();
+
+// Start RAF so the loop is warm and ready for playback
+startRAF();
+</script>
+<script src="app-switcher.js"></script>
+<script src="footer-injector.js"></script>
+</body>
+</html>
